@@ -13,9 +13,16 @@ load_dotenv()
 
 app = FastAPI()
 
+# FRONTEND_URL / BACKEND_URL / ALLOWED_ORIGINS default to local dev so nothing
+# changes when running on localhost. In production (Render + Netlify) set these
+# as environment variables instead of editing this file.
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", FRONTEND_URL).split(",")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:5173"],
+    allow_origins=ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -23,8 +30,9 @@ app.add_middleware(
 
 CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
 CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-REDIRECT_URI = "http://localhost:8000/auth/callback"
+REDIRECT_URI = f"{BACKEND_URL}/auth/callback"
 SCOPES = "https://www.googleapis.com/auth/youtube.readonly"
+DEMO_TOKEN = "demo-mode"
 
 tokens = {}
 current_profile = "maya"
@@ -91,7 +99,7 @@ async def callback(code: str):
         })
     token_data = resp.json()
     tokens["access_token"] = token_data.get("access_token")
-    return RedirectResponse("http://localhost:5173?auth=success")
+    return RedirectResponse(f"{FRONTEND_URL}?auth=success")
 
 # ---- PROFILES ----
 
@@ -115,10 +123,13 @@ async def switch_profile(request: Request):
 @app.get("/api/analyze")
 async def analyze():
     global analysis_cache
-    
+
     if not tokens.get("access_token"):
-        return {"error": "not authenticated"}
-    
+        # No real YouTube OAuth on file (e.g. a visitor who hasn't logged in with
+        # a whitelisted test-user Google account). Fall back to demo mode instead
+        # of erroring out, so the public deploy always shows working data.
+        tokens["access_token"] = DEMO_TOKEN
+
     # Return cache if available
     if analysis_cache.get("profile") == current_profile:
         return analysis_cache["data"]

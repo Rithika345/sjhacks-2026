@@ -1,7 +1,7 @@
 // Footprint — Live analysis from backend
 
 const { useState: fUseState, useEffect: fUseEffect } = React;
-const FP_API = "http://localhost:8000";
+const FP_API = window.API_BASE_URL;
 
 const fmt = (n) => {
   if (n >= 1e6) return (n/1e6).toFixed(2) + "M";

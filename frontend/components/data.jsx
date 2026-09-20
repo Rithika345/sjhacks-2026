@@ -193,7 +193,7 @@ window.VAULTED = VAULTED;
 // ═══════════════════════════════════════════════════════════
 // LIVE API LAYER — fetches from backend, overwrites globals
 // ═══════════════════════════════════════════════════════════
-const DATA_API = "http://localhost:8000";
+const DATA_API = window.API_BASE_URL;
 
 window._currentProfile = "maya";
 window._profiles = { maya: "Maya's Kitchen", gamerz: "GamerzHub", techtara: "TechTara" };

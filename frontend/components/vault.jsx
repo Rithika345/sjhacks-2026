@@ -1,7 +1,7 @@
 // Vault — Live idea protection + similarity detection via backend
 
 const { useState: vUseState } = React;
-const VAULT_API = "http://localhost:8000";
+const VAULT_API = window.API_BASE_URL;
 
 const VaultView = () => {
   const [ideaTitle, setIdeaTitle] = vUseState("");

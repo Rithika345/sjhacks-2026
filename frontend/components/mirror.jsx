@@ -1,7 +1,7 @@
 // Mirror — Live creative health from backend
 
 const { useState: mUseState, useEffect: mUseEffect } = React;
-const MIRROR_API = "http://localhost:8000";
+const MIRROR_API = window.API_BASE_URL;
 
 const MirrorView = () => {
   const [data, setData] = mUseState(null);

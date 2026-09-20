@@ -1,7 +1,7 @@
 // Sandbox — Live stress test via backend API
 
 const { useState } = React;
-const SANDBOX_API = "http://localhost:8000";
+const SANDBOX_API = window.API_BASE_URL;
 
 const SandboxView = () => {
   const [text, setText] = useState("");
