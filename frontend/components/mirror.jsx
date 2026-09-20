@@ -10,7 +10,7 @@ const MirrorView = () => {
 
   mUseEffect(() => {
     setLoading(true);
-    fetch(MIRROR_API + "/api/mirror")
+    fetch(MIRROR_API + "/api/mirror", { credentials: "include" })
       .then(r => r.json())
       .then(d => { if (d.error) { setError(d.error); } else { setData(d); } setLoading(false); })
       .catch(e => { setError(e.message); setLoading(false); });

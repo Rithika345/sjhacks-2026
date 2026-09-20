@@ -11,7 +11,6 @@ const SandboxView = () => {
   const [chatHistory, setChatHistory] = useState([]);
   const [chatInput, setChatInput] = useState("");
   const [chatLoading, setChatLoading] = useState(false);
-  const [sessionId] = useState("session-" + Date.now());
 
   const onRun = async () => {
     if (!text.trim()) return;
@@ -20,6 +19,7 @@ const SandboxView = () => {
       // Phase 1: Get structured risk report
       const resp = await fetch(SANDBOX_API + "/api/sandbox", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ move: text }),
       });
@@ -30,8 +30,9 @@ const SandboxView = () => {
       // Phase 2: Start the conversation
       const chatResp = await fetch(SANDBOX_API + "/api/sandbox/chat", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, move: text, message: text }),
+        body: JSON.stringify({ move: text, message: text }),
       });
       const chatData = await chatResp.json();
       setChatHistory([{ role: "assistant", content: chatData.response }]);
@@ -50,8 +51,9 @@ const SandboxView = () => {
     try {
       const resp = await fetch(SANDBOX_API + "/api/sandbox/chat", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ session_id: sessionId, message: msg }),
+        body: JSON.stringify({ message: msg }),
       });
       const data = await resp.json();
       setChatHistory(prev => [...prev, { role: "assistant", content: data.response }]);

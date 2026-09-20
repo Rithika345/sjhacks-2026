@@ -1,42 +1,46 @@
-from fastapi import FastAPI, Request
-from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import RedirectResponse
-from dotenv import load_dotenv
-import os
-import httpx
 import json
-from routers.processing import process_videos
-from routers.interpret import interpret_footprint, interpret_mirror, interpret_sandbox, sandbox_conversation
-from routers.vault import create_proof, seed_vault, vault_store
+import logging
+from datetime import datetime, timezone
 
-load_dotenv()
+import httpx
+from fastapi import Depends, FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from sqlalchemy.orm import Session
+
+import config
+from auth import create_session_token
+from db import Base, engine, get_db
+from deps import get_current_user
+from models import Analysis, SandboxSession, User, VaultEntry
+from routers.interpret import interpret_footprint, interpret_mirror, interpret_sandbox, sandbox_conversation
+from routers.processing import process_videos
+from routers.vault import build_proof, check_similarity, extract_concepts
+from schemas import ProfileSwitchRequest, SandboxChatRequest, SandboxRequest, VaultRequest
+
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
 
-# FRONTEND_URL / BACKEND_URL / ALLOWED_ORIGINS default to local dev so nothing
-# changes when running on localhost. In production (Render + Netlify) set these
-# as environment variables instead of editing this file.
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
-BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
-ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", FRONTEND_URL).split(",")
-
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=ALLOWED_ORIGINS,
+    allow_origins=config.ALLOWED_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
-CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
-REDIRECT_URI = f"{BACKEND_URL}/auth/callback"
-SCOPES = "https://www.googleapis.com/auth/youtube.readonly"
-DEMO_TOKEN = "demo-mode"
+logger = logging.getLogger("fifth_postulate")
 
-tokens = {}
-current_profile = "maya"
-analysis_cache = {}  # Cache so we don't recompute on every endpoint
+
+@app.exception_handler(Exception)
+async def unhandled_exception_handler(request: Request, exc: Exception):
+    # Claude/Google API calls (Anthropic auth errors, network hiccups) or any
+    # other unexpected failure previously surfaced as a raw 500 HTML page.
+    # Log the real error server-side, return a clean JSON shape the frontend
+    # already knows how to handle (it checks `data.error` everywhere).
+    logger.exception("Unhandled error on %s %s", request.method, request.url.path)
+    return JSONResponse(status_code=500, content={"error": "something went wrong on our end"})
 
 PROFILES = {
     "maya": {
@@ -68,9 +72,11 @@ PROFILES = {
     }
 }
 
+
 @app.get("/")
 def root():
-    return {"status": "ok", "current_profile": current_profile}
+    return {"status": "ok"}
+
 
 # ---- AUTH ----
 
@@ -78,91 +84,139 @@ def root():
 def login():
     url = (
         "https://accounts.google.com/o/oauth2/v2/auth"
-        f"?client_id={CLIENT_ID}"
-        f"&redirect_uri={REDIRECT_URI}"
+        f"?client_id={config.GOOGLE_CLIENT_ID}"
+        f"&redirect_uri={config.REDIRECT_URI}"
         f"&response_type=code"
-        f"&scope={SCOPES}"
+        f"&scope={config.YOUTUBE_SCOPES}"
         f"&access_type=offline"
         f"&prompt=consent"
     )
     return RedirectResponse(url)
 
+
 @app.get("/auth/callback")
-async def callback(code: str):
+async def callback(code: str, db: Session = Depends(get_db)):
     async with httpx.AsyncClient() as client:
-        resp = await client.post("https://oauth2.googleapis.com/token", data={
+        token_resp = await client.post("https://oauth2.googleapis.com/token", data={
             "code": code,
-            "client_id": CLIENT_ID,
-            "client_secret": CLIENT_SECRET,
-            "redirect_uri": REDIRECT_URI,
+            "client_id": config.GOOGLE_CLIENT_ID,
+            "client_secret": config.GOOGLE_CLIENT_SECRET,
+            "redirect_uri": config.REDIRECT_URI,
             "grant_type": "authorization_code",
         })
-    token_data = resp.json()
-    tokens["access_token"] = token_data.get("access_token")
-    return RedirectResponse(f"{FRONTEND_URL}?auth=success")
+        token_data = token_resp.json()
+        access_token = token_data.get("access_token")
+
+        # Identify the Google account so a repeat login maps to the same
+        # user row instead of creating a new one every time.
+        userinfo_resp = await client.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+    userinfo = userinfo_resp.json()
+    google_sub = userinfo.get("sub")
+    display_name = userinfo.get("name") or "Creator"
+
+    user = db.query(User).filter(User.google_sub == google_sub).first() if google_sub else None
+    if user is None:
+        user = User(google_sub=google_sub, display_name=display_name, is_demo=False, current_profile_key="maya")
+        db.add(user)
+    user.youtube_access_token = access_token
+    user.is_demo = False
+    db.commit()
+    db.refresh(user)
+
+    redirect = RedirectResponse(f"{config.FRONTEND_URL}?auth=success")
+    redirect.set_cookie(
+        key=config.SESSION_COOKIE,
+        value=create_session_token(user.id),
+        max_age=config.SESSION_TTL_SECONDS,
+        httponly=True,
+        secure=config.IS_CROSS_SITE_PROD,
+        samesite="none" if config.IS_CROSS_SITE_PROD else "lax",
+    )
+    return redirect
+
 
 # ---- PROFILES ----
 
 @app.get("/api/profiles")
-def list_profiles():
-    return {"profiles": {k: v["name"] for k, v in PROFILES.items()}, "current": current_profile}
+def list_profiles(current_user: User = Depends(get_current_user)):
+    return {
+        "profiles": {k: v["name"] for k, v in PROFILES.items()},
+        "current": current_user.current_profile_key,
+    }
+
 
 @app.post("/api/profiles/switch")
-async def switch_profile(request: Request):
-    global current_profile, analysis_cache
-    body = await request.json()
-    profile_id = body.get("profile", "maya")
-    if profile_id in PROFILES:
-        current_profile = profile_id
-        analysis_cache = {}  # Clear cache on profile switch
-        return {"switched_to": profile_id, "name": PROFILES[profile_id]["name"]}
-    return {"error": "unknown profile"}
+def switch_profile(
+    body: ProfileSwitchRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    if body.profile not in PROFILES:
+        return {"error": "unknown profile"}
+    current_user.current_profile_key = body.profile
+    db.commit()
+    return {"switched_to": body.profile, "name": PROFILES[body.profile]["name"]}
 
-# ---- ANALYSIS (cached) ----
 
-@app.get("/api/analyze")
-async def analyze():
-    global analysis_cache
+# ---- ANALYSIS ----
 
-    if not tokens.get("access_token"):
-        # No real YouTube OAuth on file (e.g. a visitor who hasn't logged in with
-        # a whitelisted test-user Google account). Fall back to demo mode instead
-        # of erroring out, so the public deploy always shows working data.
-        tokens["access_token"] = DEMO_TOKEN
+def _get_or_compute_analysis(current_user: User, db: Session) -> dict:
+    """Plain helper function, not a route. The old code called `await
+    analyze()` directly from other route handlers to reuse its logic, which
+    bypasses FastAPI's dependency injection — a known anti-pattern. Every
+    route that needs computed metrics calls this instead.
 
-    # Return cache if available
-    if analysis_cache.get("profile") == current_profile:
-        return analysis_cache["data"]
-    
-    profile = PROFILES[current_profile]
-    
+    NOTE ON SCOPE: today this always computes from the demo mock-data
+    profiles (maya/gamerz/techtara), even for a real OAuth login — matching
+    the original hackathon behavior. Wiring a real-OAuth user's *own* YouTube
+    data into this function is the next piece of work, not done here."""
+    profile_key = current_user.current_profile_key or "maya"
+
+    cached = (
+        db.query(Analysis)
+        .filter(Analysis.user_id == current_user.id, Analysis.profile_key == profile_key)
+        .first()
+    )
+    if cached:
+        return cached.metrics
+
+    profile = PROFILES[profile_key]
     try:
         with open(profile["mock_file"], "r") as f:
             videos = json.load(f)
     except FileNotFoundError:
         return {"error": f"mock data file {profile['mock_file']} not found"}
-    
+
     metrics = process_videos(videos)
     metrics["channel_name"] = profile["name"]
     metrics["consumption"] = profile["consumption"]
-    
-    # Cache it
-    analysis_cache = {"profile": current_profile, "data": metrics}
-    
+
+    db.add(Analysis(user_id=current_user.id, profile_key=profile_key, metrics=metrics))
+    db.commit()
+
     return metrics
+
+
+@app.get("/api/analyze")
+def analyze(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return _get_or_compute_analysis(current_user, db)
+
 
 # ---- FOOTPRINT ----
 
 @app.get("/api/footprint")
-async def get_footprint():
-    data = await analyze()
+def get_footprint(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    data = _get_or_compute_analysis(current_user, db)
     if "error" in data:
         return data
-    
+
     interpretation = interpret_footprint(
-        data["footprint"], 
+        data["footprint"],
         data["channel_name"],
-        data.get("consumption")  # NOW feeds consumption data to Claude
+        data.get("consumption"),
     )
     return {
         "metrics": data["footprint"],
@@ -172,14 +226,15 @@ async def get_footprint():
         "channel_name": data["channel_name"],
     }
 
+
 # ---- MIRROR ----
 
 @app.get("/api/mirror")
-async def get_mirror():
-    data = await analyze()
+def get_mirror(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+    data = _get_or_compute_analysis(current_user, db)
     if "error" in data:
         return data
-    
+
     interpretation = interpret_mirror(data["mirror"], data["viral"])
     return {
         "metrics": data["mirror"],
@@ -187,74 +242,127 @@ async def get_mirror():
         "interpretation": json.loads(interpretation),
     }
 
+
 # ---- SANDBOX ----
 
-sandbox_sessions = {}
-
 @app.post("/api/sandbox")
-async def run_sandbox(request: Request):
-    body = await request.json()
-    proposed_move = body.get("move", "")
-    
-    data = await analyze()
+def run_sandbox(
+    body: SandboxRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    data = _get_or_compute_analysis(current_user, db)
     if "error" in data:
         return data
-    
-    interpretation = interpret_sandbox(data["footprint"], data["mirror"], proposed_move)
+
+    interpretation = interpret_sandbox(data["footprint"], data["mirror"], body.move)
     report = json.loads(interpretation)
-    
-    # Store report so chat can reference it
-    sandbox_sessions["last_report"] = report
-    
+
+    # One active sandbox conversation per user, matching the single-page UI —
+    # starting a new stress test replaces whatever conversation was there.
+    db.query(SandboxSession).filter(SandboxSession.user_id == current_user.id).delete()
+    db.add(SandboxSession(user_id=current_user.id, proposed_move=body.move, report=report, history=[]))
+    db.commit()
+
     return {"report": report}
 
+
 @app.post("/api/sandbox/chat")
-async def sandbox_chat(request: Request):
-    body = await request.json()
-    session_id = body.get("session_id", "default")
-    message = body.get("message", "")
-    proposed_move = body.get("move", "")
-    
-    data = await analyze()
+def sandbox_chat(
+    body: SandboxChatRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    data = _get_or_compute_analysis(current_user, db)
     if "error" in data:
         return data
-    
-    if session_id not in sandbox_sessions or proposed_move:
-        sandbox_sessions[session_id] = {"move": proposed_move or message, "history": []}
-    
-    session = sandbox_sessions[session_id]
-    session["history"].append({"role": "user", "content": message})
-    
-    # Pass the initial report into the conversation
-    initial_report = sandbox_sessions.get("last_report")
-    
-    response = sandbox_conversation(
+
+    session = (
+        db.query(SandboxSession)
+        .filter(SandboxSession.user_id == current_user.id)
+        .order_by(SandboxSession.created_at.desc())
+        .first()
+    )
+    if session is None:
+        session = SandboxSession(user_id=current_user.id, proposed_move=body.move or body.message, history=[])
+        db.add(session)
+
+    history = list(session.history or [])
+    history.append({"role": "user", "content": body.message})
+
+    response_text = sandbox_conversation(
         data["footprint"],
         data["mirror"],
-        session["move"],
-        session["history"],
-        initial_report
+        session.proposed_move,
+        history,
+        session.report,
     )
-    session["history"].append({"role": "assistant", "content": response})
-    
-    return {"response": response, "turn": len(session["history"]) // 2}
+    history.append({"role": "assistant", "content": response_text})
+    session.history = history
+    db.commit()
+
+    return {"response": response_text, "turn": len(history) // 2}
+
 
 # ---- VAULT ----
 
 @app.post("/api/vault")
-async def vault_protect(request: Request):
-    body = await request.json()
-    idea_text = body.get("idea", "")
-    if not idea_text:
-        return {"error": "no idea provided"}
-    return create_proof(idea_text)
+def vault_protect(
+    body: VaultRequest,
+    current_user: User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    concepts = extract_concepts(body.idea)
+
+    now = datetime.now(timezone.utc)
+    still_protected = db.query(VaultEntry).filter(VaultEntry.expires_at > now).all()
+    existing_concept_sets = [entry.concept_tags for entry in still_protected]
+    similarity = check_similarity(concepts, existing_concept_sets)
+
+    idea_hash, expires_at, action_deadline, proof, token = build_proof(body.idea, concepts, current_user.id)
+
+    db.add(VaultEntry(
+        user_id=current_user.id,
+        idea_hash=idea_hash,
+        concept_tags=concepts,
+        certificate_jwt=token,
+        expires_at=expires_at,
+    ))
+    db.commit()
+
+    return {
+        "proof": proof,
+        "token": token,
+        "concepts_extracted": len(concepts),
+        "similarity": similarity,
+        "certificate": {
+            "hash": idea_hash,
+            "timestamp": proof["timestamp"],
+            "expires": proof["expires"],
+            "action_deadline": proof["action_deadline"],
+            "signed_token": token,
+        },
+    }
+
 
 @app.post("/api/vault/seed")
-async def vault_seed():
+def vault_seed(db: Session = Depends(get_db)):
     test_ideas = [
         "A cooking competition show where home cooks compete using only ingredients from a mystery box, judged by celebrity chefs, with weekly elimination rounds",
         "A fitness app that uses AI to analyze your workout form through your phone camera and gives real-time corrections with voice feedback",
         "A YouTube series documenting the process of renovating a vintage van into a mobile kitchen, traveling to different cities and cooking with local ingredients",
     ]
-    seed_vault(test_ideas)
-    return {"seeded": len(test_ideas), "total_in_vault": len(vault_store)}
+    for idea in test_ideas:
+        concepts = extract_concepts(idea)
+        idea_hash, expires_at, _action_deadline, _proof, token = build_proof(idea, concepts, user_id=None)
+        db.add(VaultEntry(
+            user_id=None,
+            idea_hash=idea_hash,
+            concept_tags=concepts,
+            certificate_jwt=token,
+            expires_at=expires_at,
+        ))
+    db.commit()
+
+    total = db.query(VaultEntry).count()
+    return {"seeded": len(test_ideas), "total_in_vault": total}

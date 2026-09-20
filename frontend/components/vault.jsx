@@ -12,7 +12,7 @@ const VaultView = () => {
   const [seeded, setSeeded] = vUseState(false);
 
   const onSeed = async () => {
-    const resp = await fetch(VAULT_API + "/api/vault/seed", { method: "POST" });
+    const resp = await fetch(VAULT_API + "/api/vault/seed", { method: "POST", credentials: "include" });
     const data = await resp.json();
     setSeeded(true);
     console.log("Vault seeded:", data);
@@ -24,6 +24,7 @@ const VaultView = () => {
     try {
       const resp = await fetch(VAULT_API + "/api/vault", {
         method: "POST",
+        credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ idea: ideaBody }),
       });

@@ -1,21 +1,29 @@
-from dotenv import load_dotenv
-load_dotenv()
+"""Pure Vault logic: extracting concepts, checking semantic similarity, and
+building the signed proof certificate. No database access here on purpose —
+main.py owns persistence (querying/writing VaultEntry rows) and passes in
+whatever existing data these functions need. That split is what makes this
+module trivial to unit test: every function here is a plain input -> output
+transformation, nothing to mock."""
 
-import os
 import hashlib
-from datetime import datetime, timezone, timedelta
-from jose import jwt
-from anthropic import Anthropic
 import json
+import os
+from datetime import datetime, timezone, timedelta
+from typing import Optional
+
+from anthropic import Anthropic
+from jose import jwt
+
+import config
 
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
-PRIVATE_KEY_SECRET = os.getenv("VAULT_SECRET", "sjhacks-demo-key-2026")
 
-# Anonymous concept store — no creator names, no raw ideas
-vault_store = []
+PROTECTION_DAYS = 60
+ACTION_WINDOW_DAYS = 3
 
-def extract_concepts(idea_text):
-    """Claude extracts key concepts from an idea"""
+
+def extract_concepts(idea_text: str) -> list:
+    """Claude extracts key concepts from an idea."""
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=500,
@@ -32,14 +40,15 @@ Example: ["cooking competition", "mystery ingredients", "celebrity judges", "eli
         text = text[:-3]
     return json.loads(text.strip())
 
-def check_similarity(new_concepts):
-    """Claude compares new concepts against stored anonymous concepts semantically"""
-    if not vault_store:
+
+def check_similarity(new_concepts: list, existing_concept_sets: list) -> dict:
+    """Claude compares new concepts against other still-protected ideas'
+    concept sets, semantically. existing_concept_sets is a plain list of
+    concept-tag lists (already fetched from the DB by the caller) — this
+    function never touches storage directly."""
+    if not existing_concept_sets:
         return {"score": 0, "overlapping_themes": [], "warning": None}
-    
-    # Build anonymous list of existing concept sets
-    existing = [entry["concepts"] for entry in vault_store]
-    
+
     response = client.messages.create(
         model="claude-sonnet-4-20250514",
         max_tokens=500,
@@ -48,7 +57,7 @@ def check_similarity(new_concepts):
 NEW concepts: {new_concepts}
 
 EXISTING concept sets (anonymous, one per line):
-{json.dumps(existing)}
+{json.dumps(existing_concept_sets)}
 
 Return ONLY valid JSON, no backticks:
 {{
@@ -63,69 +72,30 @@ Return ONLY valid JSON, no backticks:
     if text.endswith("```"):
         text = text[:-3]
     result = json.loads(text.strip())
-    
+
     score = result.get("highest_similarity_percent", 0)
     result["warning"] = f"{score}% semantic overlap with an existing protected idea — consider differentiating" if score > 40 else None
     return result
 
-def create_proof(idea_text: str, user_id: str = "demo-user"):
-    """Full vault flow: extract concepts, check similarity, store anonymously, sign proof"""
-    
-    # Step 1: Extract concepts
-    concepts = extract_concepts(idea_text)
-    
-    # Step 2: Check semantic similarity against existing vault
-    similarity = check_similarity(concepts)
-    
-    # Step 3: Store concepts anonymously (no creator name, no raw idea text)
+
+def build_proof(idea_text: str, concepts: list, user_id: Optional[int]):
+    """Builds the certificate + signs the JWT. Pure function, no I/O — the
+    caller is responsible for persisting the result. Returns
+    (idea_hash, expires_at, action_deadline, proof_dict, token)."""
     now = datetime.now(timezone.utc)
-    expiration = now + timedelta(days=60)
-    action_deadline = now + timedelta(days=3)
-    
-    vault_store.append({
-        "concepts": concepts,
-        "timestamp": now.isoformat(),
-        "expires": expiration.isoformat(),
-        "status": "protected",
-        # NO user_id, NO raw idea text stored
-    })
-    
-    # Step 4: Hash the full idea for the proof certificate (client would do this in production)
+    expires_at = now + timedelta(days=PROTECTION_DAYS)
+    action_deadline = now + timedelta(days=ACTION_WINDOW_DAYS)
+
     idea_hash = hashlib.sha256(f"{idea_text}{now.isoformat()}".encode()).hexdigest()
-    
-    # Step 5: Sign as JWT
+
     proof = {
         "hash": idea_hash,
         "concept_count": len(concepts),
         "timestamp": now.isoformat(),
         "user_id": user_id,
-        "expires": expiration.isoformat(),
+        "expires": expires_at.isoformat(),
         "action_deadline": action_deadline.isoformat(),
         "status": "protected",
     }
-    token = jwt.encode(proof, PRIVATE_KEY_SECRET, algorithm="HS256")
-    
-    return {
-        "proof": proof,
-        "token": token,
-        "concepts_extracted": len(concepts),
-        "similarity": similarity,
-        "certificate": {
-            "hash": idea_hash,
-            "timestamp": now.isoformat(),
-            "expires": expiration.isoformat(),
-            "action_deadline": action_deadline.isoformat(),
-            "signed_token": token,
-        }
-    }
-
-def seed_vault(ideas):
-    """Pre-populate vault with test ideas for demo"""
-    for idea in ideas:
-        concepts = extract_concepts(idea)
-        vault_store.append({
-            "concepts": concepts,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
-            "expires": (datetime.now(timezone.utc) + timedelta(days=60)).isoformat(),
-            "status": "protected",
-        })
+    token = jwt.encode(proof, config.VAULT_SECRET, algorithm="HS256")
+    return idea_hash, expires_at, action_deadline, proof, token

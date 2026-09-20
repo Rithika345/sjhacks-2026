@@ -204,11 +204,12 @@ async function loadProfile(profileId) {
   try {
     await fetch(DATA_API + "/api/profiles/switch", {
       method: "POST",
+      credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ profile: profileId }),
     });
     
-    const resp = await fetch(DATA_API + "/api/analyze");
+    const resp = await fetch(DATA_API + "/api/analyze", { credentials: "include" });
     const data = await resp.json();
     if (data.error) { console.warn("API error:", data.error); return false; }
     
