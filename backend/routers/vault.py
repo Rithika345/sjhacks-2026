@@ -25,7 +25,7 @@ ACTION_WINDOW_DAYS = 3
 def extract_concepts(idea_text: str) -> list:
     """Claude extracts key concepts from an idea."""
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-5",
         max_tokens=500,
         messages=[{"role": "user", "content": f"""Extract exactly 5-7 core concept tags from this idea. Return ONLY a JSON array of short lowercase strings. No markdown backticks.
 
@@ -50,7 +50,7 @@ def check_similarity(new_concepts: list, existing_concept_sets: list) -> dict:
         return {"score": 0, "overlapping_themes": [], "warning": None}
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-5",
         max_tokens=500,
         messages=[{"role": "user", "content": f"""Compare the NEW concept set against each EXISTING concept set. Find semantic similarity — not exact word matches. "Baking" and "cooking" are similar. "Competition" and "contest" are similar.
 

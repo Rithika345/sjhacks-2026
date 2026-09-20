@@ -53,7 +53,7 @@ Return JSON:
 }}"""
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-5",
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -82,7 +82,7 @@ Return JSON:
 }}"""
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-5",
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -107,7 +107,7 @@ Analyze this move against their actual audience. Return JSON:
 }}"""
 
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-5",
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}]
     )
@@ -152,7 +152,7 @@ If they give a vague answer, push harder. If they give a strong answer, find the
         messages.append({"role": msg["role"], "content": msg["content"]})
     
     response = client.messages.create(
-        model="claude-sonnet-4-20250514",
+        model="claude-sonnet-5",
         max_tokens=500,
         system=system_prompt,
         messages=messages,
