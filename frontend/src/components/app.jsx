@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from "react";
 import {
   IconHome, IconFootprint, IconMirror, IconSandbox, IconVault, IconCadence,
+  IconSun, IconMoon,
 } from "./icons.jsx";
 import { HomeView } from "./home.jsx";
 import { FootprintView } from "./footprint.jsx";
@@ -10,7 +11,8 @@ import { SandboxView } from "./sandbox.jsx";
 import { VaultView } from "./vault.jsx";
 import { CadenceView } from "./cadence.jsx";
 import { MAYA, liveState, loadProfile, setOnProfileChange, PROFILES } from "../data.js";
-import { useTweaks, TweaksPanel, TweakSection, TweakToggle, TweakSelect } from "../tweaks-panel.jsx";
+
+const THEME_STORAGE_KEY = "fifth-postulate-theme";
 
 const NAV = [
   { id: "home",      label: "Home",      sub: "Parallel thoughts",  Icon: IconHome },
@@ -124,7 +126,24 @@ const Sidebar = ({ active, onChange, profile }) => (
   </aside>
 );
 
-const TopBar = ({ active, profile, onProfileSwitch, profileLoading }) => {
+const ThemeToggle = ({ dark, onToggle }) => (
+  <button
+    type="button"
+    onClick={onToggle}
+    aria-label={dark ? "Switch to light theme" : "Switch to dark theme"}
+    title={dark ? "Switch to light theme" : "Switch to dark theme"}
+    style={{
+      all: "unset", cursor: "pointer", boxSizing: "border-box",
+      display: "flex", alignItems: "center", justifyContent: "center",
+      width: 36, height: 36, borderRadius: 8,
+      border: "1px solid var(--rule-soft)", color: "var(--ink-soft)",
+    }}
+  >
+    {dark ? <IconSun size={16} /> : <IconMoon size={16} />}
+  </button>
+);
+
+const TopBar = ({ active, profile, onProfileSwitch, profileLoading, darkMode, onToggleDarkMode }) => {
   const view = NAV.find(n => n.id === active);
   return (
     <div className="topbar" style={{
@@ -140,25 +159,38 @@ const TopBar = ({ active, profile, onProfileSwitch, profileLoading }) => {
         <span className="serif" style={{ fontStyle: "italic", color: "var(--ink-mute)", fontSize: 16 }}>{view?.sub}</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+        <ThemeToggle dark={darkMode} onToggle={onToggleDarkMode} />
         <ProfileSwitcher current={profile} onSwitch={onProfileSwitch} loading={profileLoading} />
       </div>
     </div>
   );
 };
 
-const TWEAK_DEFAULTS = { darkMode: false };
+const getInitialDarkMode = () => {
+  try {
+    return localStorage.getItem(THEME_STORAGE_KEY) === "dark";
+  } catch {
+    // localStorage unavailable (private browsing, disabled storage, etc.) —
+    // just start in light mode rather than failing to load.
+    return false;
+  }
+};
 
 export const App = () => {
   const [active, setActive] = useState("home");
   const [profile, setProfile] = useState("maya");
   const [profileLoading, setProfileLoading] = useState(false);
   const [dataVersion, setDataVersion] = useState(0); // forces re-render
-
-  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const [darkMode, setDarkMode] = useState(getInitialDarkMode);
 
   useEffect(() => {
-    document.documentElement.dataset.theme = tweaks.darkMode ? "dark" : "light";
-  }, [tweaks.darkMode]);
+    document.documentElement.dataset.theme = darkMode ? "dark" : "light";
+    try {
+      localStorage.setItem(THEME_STORAGE_KEY, darkMode ? "dark" : "light");
+    } catch {
+      // theme just won't persist across reloads; not worth failing over
+    }
+  }, [darkMode]);
 
   // Register callback so data.js can trigger re-render, then kick off the
   // initial demo-profile load (moved here from a module-level side effect in
@@ -188,34 +220,21 @@ export const App = () => {
   }[active];
 
   return (
-    <>
-      <div className="paper-grain" style={{ display: "flex", minHeight: "100vh", background: "var(--cream-page)" }}>
-        <Sidebar active={active} onChange={setActive} profile={profile} />
-        <main style={{ flex: 1, minWidth: 0 }} data-screen-label={NAV.find(n => n.id === active)?.label}>
-          <TopBar active={active} profile={profile} onProfileSwitch={handleProfileSwitch} profileLoading={profileLoading} />
-          <div key={`${active}-${dataVersion}`}>
-            <ViewComponent />
-          </div>
-        </main>
-      </div>
-
-      <TweaksPanel title="Tweaks">
-        <TweakSection label="Theme">
-          <TweakToggle
-            label="Dark sketchbook"
-            value={tweaks.darkMode}
-            onChange={v => setTweak("darkMode", v)}
-          />
-        </TweakSection>
-        <TweakSection label="Quick navigation">
-          <TweakSelect
-            label="View"
-            value={active}
-            onChange={v => setActive(v)}
-            options={NAV.map(n => ({ label: n.label, value: n.id }))}
-          />
-        </TweakSection>
-      </TweaksPanel>
-    </>
+    <div className="paper-grain" style={{ display: "flex", minHeight: "100vh", background: "var(--cream-page)" }}>
+      <Sidebar active={active} onChange={setActive} profile={profile} />
+      <main style={{ flex: 1, minWidth: 0 }} data-screen-label={NAV.find(n => n.id === active)?.label}>
+        <TopBar
+          active={active}
+          profile={profile}
+          onProfileSwitch={handleProfileSwitch}
+          profileLoading={profileLoading}
+          darkMode={darkMode}
+          onToggleDarkMode={() => setDarkMode(d => !d)}
+        />
+        <div key={`${active}-${dataVersion}`}>
+          <ViewComponent />
+        </div>
+      </main>
+    </div>
   );
 };
