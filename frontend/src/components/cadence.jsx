@@ -1,6 +1,10 @@
 // Cadence — Rhythm analytics, no provocateur
+import { Fragment } from "react";
+import { ViewHeader, PaperCard } from "./atoms.jsx";
+import { IconMirror, IconCalendar } from "./icons.jsx";
+import { DAYS, HEATMAP, WEEKLY } from "../data.js";
 
-const CadenceView = () => {
+export const CadenceView = () => {
   // Use HEATMAP but show as bigger heatmap with engagement
   const bestSlots = [
     { rank: 1, day: "Sunday", time: "6–10p", eng: 9.4, posts: 6 },
@@ -53,7 +57,7 @@ const CadenceView = () => {
             <div></div>
             {DAYS.map(d => <div key={d} className="sans" style={{ fontSize: 11, color: "var(--ink-mute)", textAlign: "center", fontWeight: 500 }}>{d}</div>)}
             {HEATMAP.map((row, ri) => (
-              <React.Fragment key={ri}>
+              <Fragment key={ri}>
                 <div className="sans" style={{ fontSize: 11, color: "var(--ink-mute)", textAlign: "right", paddingRight: 8 }}>{row.time}</div>
                 {row.vals.map((v, ci) => {
                   const intensity = v / 10;
@@ -73,7 +77,7 @@ const CadenceView = () => {
                     </div>
                   );
                 })}
-              </React.Fragment>
+              </Fragment>
             ))}
           </div>
         </PaperCard>
@@ -183,5 +187,3 @@ const CadenceView = () => {
     </div>
   );
 };
-
-window.CadenceView = CadenceView;

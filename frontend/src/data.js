@@ -1,5 +1,10 @@
-// Sample data for Maya's Kitchen (fallback)
-const MAYA = {
+import { API_BASE_URL } from "./config.js";
+
+// Sample data for Maya's Kitchen (fallback, shown until the first
+// /api/analyze response arrives). Mutated in place by loadProfile below —
+// components read these objects by reference, so a property update here is
+// visible on the next render without any extra plumbing.
+export const MAYA = {
   name: "Maya's Kitchen",
   handle: "@mayaskitchen",
   subscribers: 45200,
@@ -8,7 +13,7 @@ const MAYA = {
   burnoutWeek: 26,
 };
 
-const SIX_MONTHS = {
+export const SIX_MONTHS = {
   views: 1284000,
   viewsTrend: +12,
   likes: 86400,
@@ -17,7 +22,12 @@ const SIX_MONTHS = {
   commentsTrend: -22,
 };
 
-const TOP_VIDEOS = [
+// The rest of these are *replaced* wholesale by loadProfile (new array/object,
+// not a mutated one), so they're declared with `let` and re-exported live:
+// ES module bindings are live references, so an importer reading `WEEKLY`
+// inside a component's render function always sees data.js's current value,
+// even after this module reassigns it internally.
+export let TOP_VIDEOS = [
   { rank: 1, title: "One-Pot Tuscan Bean Stew (Lazy Sunday Edition)", views: 142300, days: 24, kind: "Recipe", color: "#C7855B" },
   { rank: 2, title: "I Tried Cooking In Lisbon For A Week — Honest Take", views: 118900, days: 41, kind: "Travel", color: "#8AA17A" },
   { rank: 3, title: "Why Your Sourdough Keeps Failing (5 Real Reasons)", views: 96400, days: 12, kind: "Tips", color: "#B8543F" },
@@ -25,14 +35,14 @@ const TOP_VIDEOS = [
   { rank: 5, title: "My Honest Kitchen Tour (It's a Mess)", views: 71800, days: 73, kind: "Vlog", color: "#A98ABF" },
 ];
 
-const CATEGORIES = [
+export let CATEGORIES = [
   { name: "Recipes", pct: 62, color: "#C7855B" },
   { name: "Vlogs", pct: 18, color: "#A98ABF" },
   { name: "Kitchen Tips", pct: 12, color: "#B8543F" },
   { name: "Travel", pct: 8, color: "#8AA17A" },
 ];
 
-const WEEKLY = (() => {
+export const WEEKLY_SEED = (() => {
   const arr = [];
   for (let i = 0; i < 26; i++) {
     const ramp = i / 25;
@@ -47,17 +57,18 @@ const WEEKLY = (() => {
   }
   return arr;
 })();
+export let WEEKLY = WEEKLY_SEED;
 
-const HEATMAP = [
+export let HEATMAP = [
   { time: "6–10a",  vals: [3.1, 2.8, 4.2, 3.9, 5.1, 6.4, 7.2] },
   { time: "10a–2p", vals: [2.4, 2.1, 3.0, 2.8, 4.0, 5.2, 5.8] },
   { time: "2–6p",  vals: [4.8, 4.2, 5.1, 4.9, 6.2, 7.4, 8.1] },
   { time: "6–10p", vals: [5.9, 5.4, 6.3, 6.0, 7.1, 8.6, 9.4] },
 ];
 
-const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+export const DAYS = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
 
-const VAULTED = [
+export let VAULTED = [
   {
     id: "v-001",
     title: "Quiet Kitchen — A Series About Cooking Alone",
@@ -87,7 +98,7 @@ const VAULTED = [
   },
 ];
 
-const FOOTPRINT_TOTALS = {
+export const FOOTPRINT_TOTALS = {
   hoursOnline: 1184,
   hoursTrend: +6,
   platformsTouched: 23,
@@ -96,7 +107,7 @@ const FOOTPRINT_TOTALS = {
   topPlatformShare: 41,
 };
 
-const FOOTPRINT_PLATFORMS = [
+export let FOOTPRINT_PLATFORMS = [
   { name: "YouTube",      hours: 312, pct: 26.4, kind: "video",   color: "#B8543F" },
   { name: "Instagram",    hours: 198, pct: 16.7, kind: "social",  color: "#C7855B" },
   { name: "Spotify",      hours: 176, pct: 14.9, kind: "audio",   color: "#8AA17A" },
@@ -107,7 +118,7 @@ const FOOTPRINT_PLATFORMS = [
   { name: "Other (16)",   hours: 172, pct: 14.5, kind: "mixed",   color: "#8A7868" },
 ];
 
-const FOOTPRINT_TOP_ITEMS = [
+export const FOOTPRINT_TOP_ITEMS = [
   { rank: 1, kind: "Article",  title: "The Slow Death of the Foodie Internet",      source: "Eater · long read",    minutes: 28, color: "#A98ABF" },
   { rank: 2, kind: "Podcast",  title: "Samin Nosrat on losing the appetite to make", source: "On Being · 1h 12m",   minutes: 72, color: "#8AA17A" },
   { rank: 3, kind: "Video",    title: "Why every recipe channel sounds the same",    source: "YouTube · 18m",       minutes: 18, color: "#B8543F" },
@@ -115,7 +126,7 @@ const FOOTPRINT_TOP_ITEMS = [
   { rank: 5, kind: "Newsletter", title: "Dense Discovery — Issue 318",               source: "Substack · weekly",    minutes: 11, color: "#6F8F5C" },
 ];
 
-const FOOTPRINT_THEMES = [
+export let FOOTPRINT_THEMES = [
   { theme: "Burnout & creative recovery", count: 47, color: "#B8543F" },
   { theme: "Food media criticism",        count: 31, color: "#C7855B" },
   { theme: "Slow living / quiet content", count: 28, color: "#8AA17A" },
@@ -123,7 +134,7 @@ const FOOTPRINT_THEMES = [
   { theme: "Indie publishing economics",  count: 14, color: "#C8924A" },
 ];
 
-const FOOTPRINT_RHYTHM = [
+export const FOOTPRINT_RHYTHM = [
   { day: "Mon", hours: 5.2 },
   { day: "Tue", hours: 4.8 },
   { day: "Wed", hours: 5.6 },
@@ -133,13 +144,7 @@ const FOOTPRINT_RHYTHM = [
   { day: "Sun", hours: 8.4 },
 ];
 
-window.FOOTPRINT_TOTALS = FOOTPRINT_TOTALS;
-window.FOOTPRINT_PLATFORMS = FOOTPRINT_PLATFORMS;
-window.FOOTPRINT_TOP_ITEMS = FOOTPRINT_TOP_ITEMS;
-window.FOOTPRINT_THEMES = FOOTPRINT_THEMES;
-window.FOOTPRINT_RHYTHM = FOOTPRINT_RHYTHM;
-
-const PERCEIVED_IDENTITY = {
+export const PERCEIVED_IDENTITY = {
   topLabels: [
     { label: "Cozy weeknight cook",   strength: 0.92, source: "comments + thumbnails saved" },
     { label: "The honest one",        strength: 0.81, source: "retention spikes on candid moments" },
@@ -154,7 +159,7 @@ const PERCEIVED_IDENTITY = {
   ],
 };
 
-const OVERTON_TOPICS = [
+export const OVERTON_TOPICS = [
   { id: 1, name: "One-pot weeknight recipes",        accept: 0.94, novelty: 0.05, band: "safe",  evidence: "Top 4 of 5 most-shared videos" },
   { id: 2, name: "'Lazy' / low-effort framing",      accept: 0.91, novelty: 0.10, band: "safe",  evidence: "Spikes retention by +18%" },
   { id: 3, name: "Honest mistakes on camera",        accept: 0.88, novelty: 0.15, band: "safe",  evidence: "Comment sentiment +0.42" },
@@ -169,7 +174,7 @@ const OVERTON_TOPICS = [
   { id: 12, name: "Charging for content / paywall",  accept: -0.61, novelty: 0.88, band: "shock", evidence: "Free-content covenant in 31% of top comments" },
 ];
 
-const AUDIENCE_SEGMENTS = [
+export const AUDIENCE_SEGMENTS = [
   { segment: "Tired weeknight cooks (25–40)", pct: 47, sentiment: 0.68, color: "#B8543F" },
   { segment: "Budget-aware students",          pct: 23, sentiment: 0.61, color: "#C7855B" },
   { segment: "Anti-aesthetic / authenticity-seekers", pct: 18, sentiment: 0.74, color: "#8AA17A" },
@@ -177,127 +182,124 @@ const AUDIENCE_SEGMENTS = [
   { segment: "Drive-by recipe seekers",        pct:  4, sentiment: 0.05, color: "#8A7868" },
 ];
 
-window.PERCEIVED_IDENTITY = PERCEIVED_IDENTITY;
-window.OVERTON_TOPICS = OVERTON_TOPICS;
-window.AUDIENCE_SEGMENTS = AUDIENCE_SEGMENTS;
-
-window.MAYA = MAYA;
-window.SIX_MONTHS = SIX_MONTHS;
-window.TOP_VIDEOS = TOP_VIDEOS;
-window.CATEGORIES = CATEGORIES;
-window.WEEKLY = WEEKLY;
-window.HEATMAP = HEATMAP;
-window.DAYS = DAYS;
-window.VAULTED = VAULTED;
-
 // ═══════════════════════════════════════════════════════════
-// LIVE API LAYER — fetches from backend, overwrites globals
+// LIVE API LAYER — fetches from backend, replaces the demo data above
 // ═══════════════════════════════════════════════════════════
-const DATA_API = window.API_BASE_URL;
 
-window._currentProfile = "maya";
-window._profiles = { maya: "Maya's Kitchen", gamerz: "GamerzHub", techtara: "TechTara" };
-window._liveData = null;
-window._onProfileChange = null; // app.jsx sets this
+export const PROFILES = { maya: "Maya's Kitchen", gamerz: "GamerzHub", techtara: "TechTara" };
 
-async function loadProfile(profileId) {
+// Small mutable bag for cross-view derived values that don't have a home of
+// their own (burnout score, best posting day, etc). Exported as one object
+// so consumers do `liveState.burnoutScore` rather than importing a dozen
+// separate loose globals.
+export const liveState = {
+  currentProfile: "maya",
+  liveData: null,
+  burnoutScore: null,
+  engagementSlope: null,
+  bestDay: null,
+  bestHour: null,
+  concentrationRisk: null,
+  dominantCategory: null,
+  consumption: null,
+};
+
+let _onProfileChange = null;
+export function setOnProfileChange(fn) {
+  _onProfileChange = fn;
+}
+
+export async function loadProfile(profileId) {
   try {
-    await fetch(DATA_API + "/api/profiles/switch", {
+    await fetch(API_BASE_URL + "/api/profiles/switch", {
       method: "POST",
       credentials: "include",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ profile: profileId }),
     });
-    
-    const resp = await fetch(DATA_API + "/api/analyze", { credentials: "include" });
+
+    const resp = await fetch(API_BASE_URL + "/api/analyze", { credentials: "include" });
     const data = await resp.json();
     if (data.error) { console.warn("API error:", data.error); return false; }
-    
-    window._currentProfile = profileId;
-    window._liveData = data;
-    
-    // Core identity
-    window.MAYA.name = data.channel_name;
-    window.MAYA.handle = "@" + data.channel_name.toLowerCase().replace(/[^a-z0-9]/g, "");
-    window.MAYA.subscribers = data.footprint.total_views;
-    
+
+    liveState.currentProfile = profileId;
+    liveState.liveData = data;
+
+    // Core identity — mutate in place, same object reference every caller holds.
+    MAYA.name = data.channel_name;
+    MAYA.handle = "@" + data.channel_name.toLowerCase().replace(/[^a-z0-9]/g, "");
+    MAYA.subscribers = data.footprint.total_views;
+
     // Weekly data for Mirror/Cadence
-    window.WEEKLY = data.mirror.weekly_data.map((w, i) => ({
+    WEEKLY = data.mirror.weekly_data.map((w, i) => ({
       week: i,
       uploads: w.uploads,
       engagement: w.avg_engagement,
       subs: 30000 + i * 580,
     }));
-    
+
     // Categories
     const catColors = { food_cooking: "#C7855B", lifestyle_personal: "#A98ABF", challenge_entertainment: "#B8543F", tech_review: "#8AA17A", other: "#8A7868" };
     const catNames = { food_cooking: "Recipes", lifestyle_personal: "Vlogs", challenge_entertainment: "Challenges", tech_review: "Tech", other: "Other" };
-    window.CATEGORIES = Object.entries(data.footprint.category_breakdown)
+    CATEGORIES = Object.entries(data.footprint.category_breakdown)
       .filter(([k, v]) => v > 0)
       .map(([k, v]) => ({ name: catNames[k] || k, pct: v, color: catColors[k] || "#8A7868" }));
-    
+
     // Top videos
-    window.TOP_VIDEOS = data.highlights.top_performers.map((v, i) => ({
+    TOP_VIDEOS = data.highlights.top_performers.map((v, i) => ({
       rank: i + 1, title: v.title, views: v.views, days: 30, kind: "Top", color: "#B8543F",
     }));
-    
+
     // Six month stats
-    window.SIX_MONTHS.views = data.footprint.total_views;
-    window.SIX_MONTHS.likes = Math.round(data.footprint.total_views * 0.08);
-    window.SIX_MONTHS.comments = Math.round(data.footprint.total_views * 0.03);
-    
+    SIX_MONTHS.views = data.footprint.total_views;
+    SIX_MONTHS.likes = Math.round(data.footprint.total_views * 0.08);
+    SIX_MONTHS.comments = Math.round(data.footprint.total_views * 0.03);
+
     // Footprint themes
-    window.FOOTPRINT_THEMES = data.footprint.top_topics.slice(0, 5).map((t, i) => ({
+    FOOTPRINT_THEMES = data.footprint.top_topics.slice(0, 5).map((t, i) => ({
       theme: t,
       count: Math.round(data.footprint.topic_scores[t] || 10),
       color: ["#B8543F", "#C7855B", "#8AA17A", "#A98ABF", "#C8924A"][i],
     }));
-    
+
     // Consumption as platform breakdown
-    window.FOOTPRINT_PLATFORMS = data.consumption.subscriptions.slice(0, 7).map((s, i) => ({
+    FOOTPRINT_PLATFORMS = data.consumption.subscriptions.slice(0, 7).map((s, i) => ({
       name: s,
       hours: Math.round(300 - i * 35),
       pct: Math.round((300 - i * 35) / 15),
       kind: "subscription",
       color: ["#B8543F", "#C7855B", "#8AA17A", "#A98ABF", "#C8924A", "#6F8F5C", "#9C4434"][i],
     }));
-    
+
     // Vault — clear Maya's entries for other profiles
     if (profileId !== "maya") {
-      window.VAULTED = [];
+      VAULTED = [];
     }
-    
+
     // Heatmap from real day breakdown
     const dayMap = data.viral.day_breakdown;
     const days = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
-    window.HEATMAP = [
+    HEATMAP = [
       { time: "6–10a",  vals: days.map(d => Math.round((dayMap[d] || 5) * 0.6 * 10) / 10) },
       { time: "10a–2p", vals: days.map(d => Math.round((dayMap[d] || 5) * 0.5 * 10) / 10) },
       { time: "2–6p",   vals: days.map(d => Math.round((dayMap[d] || 5) * 0.9 * 10) / 10) },
       { time: "6–10p",  vals: days.map(d => Math.round((dayMap[d] || 5) * 1.1 * 10) / 10) },
     ];
-    
+
     // Global metrics
-    window._burnoutScore = data.mirror.burnout_score;
-    window._engagementSlope = data.mirror.engagement_slope;
-    window._bestDay = data.viral.best_day;
-    window._bestHour = data.viral.best_hour;
-    window._concentrationRisk = data.footprint.concentration_risk;
-    window._dominantCategory = data.footprint.dominant_category;
-    window._consumption = data.consumption;
-    
-    console.log("✅ Profile loaded:", data.channel_name);
-    
-    if (window._onProfileChange) window._onProfileChange(profileId);
-    
+    liveState.burnoutScore = data.mirror.burnout_score;
+    liveState.engagementSlope = data.mirror.engagement_slope;
+    liveState.bestDay = data.viral.best_day;
+    liveState.bestHour = data.viral.best_hour;
+    liveState.concentrationRisk = data.footprint.concentration_risk;
+    liveState.dominantCategory = data.footprint.dominant_category;
+    liveState.consumption = data.consumption;
+
+    if (_onProfileChange) _onProfileChange(profileId);
+
     return true;
   } catch (err) {
     console.warn("Backend not available:", err);
     return false;
   }
 }
-
-window.loadProfile = loadProfile;
-
-// Auto-load on page load
-loadProfile("maya");

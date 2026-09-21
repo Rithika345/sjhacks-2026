@@ -1,20 +1,20 @@
 // Mirror — Live creative health from backend
+import { useState, useEffect } from "react";
+import { ViewHeader, PaperCard } from "./atoms.jsx";
+import { API_BASE_URL } from "../config.js";
 
-const { useState: mUseState, useEffect: mUseEffect } = React;
-const MIRROR_API = window.API_BASE_URL;
+export const MirrorView = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-const MirrorView = () => {
-  const [data, setData] = mUseState(null);
-  const [loading, setLoading] = mUseState(true);
-  const [error, setError] = mUseState(null);
-
-  mUseEffect(() => {
+  useEffect(() => {
     setLoading(true);
-    fetch(MIRROR_API + "/api/mirror", { credentials: "include" })
+    fetch(API_BASE_URL + "/api/mirror", { credentials: "include" })
       .then(r => r.json())
       .then(d => { if (d.error) { setError(d.error); } else { setData(d); } setLoading(false); })
       .catch(e => { setError(e.message); setLoading(false); });
-  }, [window._currentProfile]);
+  }, []);
 
   if (loading) return (
     <div className="view-enter" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 56px 80px" }}>
@@ -153,5 +153,3 @@ const MirrorView = () => {
     </div>
   );
 };
-
-window.MirrorView = MirrorView;

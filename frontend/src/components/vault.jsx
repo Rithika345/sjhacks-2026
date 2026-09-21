@@ -1,28 +1,28 @@
 // Vault — Live idea protection + similarity detection via backend
+import { useState } from "react";
+import { ViewHeader, PaperCard } from "./atoms.jsx";
+import { API_BASE_URL } from "../config.js";
+import { VAULTED } from "../data.js";
 
-const { useState: vUseState } = React;
-const VAULT_API = window.API_BASE_URL;
-
-const VaultView = () => {
-  const [ideaTitle, setIdeaTitle] = vUseState("");
-  const [ideaBody, setIdeaBody] = vUseState("");
-  const [loading, setLoading] = vUseState(false);
-  const [result, setResult] = vUseState(null);
-  const [vaultItems, setVaultItems] = vUseState(window.VAULTED || []);
-  const [seeded, setSeeded] = vUseState(false);
+export const VaultView = () => {
+  const [ideaTitle, setIdeaTitle] = useState("");
+  const [ideaBody, setIdeaBody] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [vaultItems, setVaultItems] = useState(VAULTED || []);
+  const [seeded, setSeeded] = useState(false);
 
   const onSeed = async () => {
-    const resp = await fetch(VAULT_API + "/api/vault/seed", { method: "POST", credentials: "include" });
-    const data = await resp.json();
+    const resp = await fetch(API_BASE_URL + "/api/vault/seed", { method: "POST", credentials: "include" });
+    await resp.json();
     setSeeded(true);
-    console.log("Vault seeded:", data);
   };
 
   const onProtect = async () => {
     if (!ideaBody.trim()) return;
     setLoading(true);
     try {
-      const resp = await fetch(VAULT_API + "/api/vault", {
+      const resp = await fetch(API_BASE_URL + "/api/vault", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -206,5 +206,3 @@ const VaultView = () => {
     </div>
   );
 };
-
-window.VaultView = VaultView;

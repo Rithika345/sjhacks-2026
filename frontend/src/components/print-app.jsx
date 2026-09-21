@@ -1,4 +1,9 @@
 // Print-only app: renders every view stacked, each on its own page.
+import { FootprintView } from "./footprint.jsx";
+import { MirrorView } from "./mirror.jsx";
+import { SandboxView } from "./sandbox.jsx";
+import { VaultView } from "./vault.jsx";
+import { CadenceView } from "./cadence.jsx";
 
 const PrintCover = () => (
   <section className="print-page print-cover paper-grain">
@@ -46,7 +51,7 @@ const PRINT_VIEWS = [
   { label: "Cadence",   sub: "Your rhythm",        View: CadenceView },
 ];
 
-const PrintApp = () => (
+export const PrintApp = () => (
   <div className="print-root" style={{ background: "var(--cream-page)" }}>
     <PrintCover />
     {PRINT_VIEWS.map(v => (
@@ -54,28 +59,3 @@ const PrintApp = () => (
     ))}
   </div>
 );
-
-const mountPrint = () => {
-  const el = document.getElementById("root");
-  if (!el) return;
-  ReactDOM.createRoot(el).render(<PrintApp />);
-
-  // Wait for fonts + a beat for layout, then print.
-  const triggerPrint = () => {
-    setTimeout(() => {
-      if (window.__SKIP_AUTOPRINT__) return;
-      window.print();
-    }, 800);
-  };
-  if (document.fonts && document.fonts.ready) {
-    document.fonts.ready.then(triggerPrint);
-  } else {
-    triggerPrint();
-  }
-};
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", mountPrint);
-} else {
-  mountPrint();
-}

@@ -1,6 +1,6 @@
 // Home — landing view
 
-const HomeView = () => {
+export const HomeView = () => {
   return (
     <div className="view-enter" style={{
       minHeight: "calc(100vh - 64px)",
@@ -48,5 +48,3 @@ const HomeView = () => {
     </div>
   );
 };
-
-window.HomeView = HomeView;

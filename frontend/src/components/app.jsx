@@ -1,6 +1,16 @@
 // App shell — sidebar, topbar, view router, profile switcher
-
-const { useState: aUseState, useEffect: aUseEffect, useCallback: aUseCallback } = React;
+import { useState, useEffect, useCallback } from "react";
+import {
+  IconHome, IconFootprint, IconMirror, IconSandbox, IconVault, IconCadence,
+} from "./icons.jsx";
+import { HomeView } from "./home.jsx";
+import { FootprintView } from "./footprint.jsx";
+import { MirrorView } from "./mirror.jsx";
+import { SandboxView } from "./sandbox.jsx";
+import { VaultView } from "./vault.jsx";
+import { CadenceView } from "./cadence.jsx";
+import { MAYA, liveState, loadProfile, setOnProfileChange, PROFILES } from "../data.js";
+import { useTweaks, TweaksPanel, TweakSection, TweakToggle, TweakSelect } from "../tweaks-panel.jsx";
 
 const NAV = [
   { id: "home",      label: "Home",      sub: "Parallel thoughts",  Icon: IconHome },
@@ -30,7 +40,7 @@ const ProfileSwitcher = ({ current, onSwitch, loading }) => (
     borderRadius: 8,
   }}>
     <span className="eyebrow" style={{ alignSelf: "center", marginRight: 8 }}>Demo Profile</span>
-    {Object.entries(window._profiles).map(([id, name]) => (
+    {Object.entries(PROFILES).map(([id, name]) => (
       <button
         key={id}
         onClick={() => onSwitch(id)}
@@ -104,9 +114,9 @@ const Sidebar = ({ active, onChange, profile }) => (
           fontFamily: "var(--serif)", fontSize: 16, fontWeight: 600,
         }}>{PROFILE_INITIALS[profile]}</div>
         <div style={{ flex: 1, minWidth: 0 }}>
-          <div className="serif" style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.1 }}>{window.MAYA.name}</div>
+          <div className="serif" style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.1 }}>{MAYA.name}</div>
           <div className="sans" style={{ fontSize: 11, color: "var(--ink-mute) " }}>
-            {window._burnoutScore != null ? `Burnout: ${window._burnoutScore}/100` : "Loading..."}
+            {liveState.burnoutScore != null ? `Burnout: ${liveState.burnoutScore}/100` : "Loading..."}
           </div>
         </div>
       </div>
@@ -136,31 +146,36 @@ const TopBar = ({ active, profile, onProfileSwitch, profileLoading }) => {
   );
 };
 
-const App = () => {
-  const [active, setActive] = aUseState("home");
-  const [profile, setProfile] = aUseState("maya");
-  const [profileLoading, setProfileLoading] = aUseState(false);
-  const [dataVersion, setDataVersion] = aUseState(0); // forces re-render
+const TWEAK_DEFAULTS = { darkMode: false };
 
-  const [tweaks, setTweak] = useTweaks(window.__TWEAKS__);
+export const App = () => {
+  const [active, setActive] = useState("home");
+  const [profile, setProfile] = useState("maya");
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [dataVersion, setDataVersion] = useState(0); // forces re-render
 
-  aUseEffect(() => {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+  useEffect(() => {
     document.documentElement.dataset.theme = tweaks.darkMode ? "dark" : "light";
   }, [tweaks.darkMode]);
 
-  // Register callback so data.jsx can trigger re-render
-  aUseEffect(() => {
-    window._onProfileChange = (newProfile) => {
+  // Register callback so data.js can trigger re-render, then kick off the
+  // initial demo-profile load (moved here from a module-level side effect in
+  // data.js, so importing the data module never has a network side effect).
+  useEffect(() => {
+    setOnProfileChange((newProfile) => {
       setProfile(newProfile);
       setDataVersion(v => v + 1);
       setProfileLoading(false);
-    };
+    });
+    loadProfile("maya");
   }, []);
 
-  const handleProfileSwitch = aUseCallback(async (profileId) => {
+  const handleProfileSwitch = useCallback(async (profileId) => {
     if (profileId === profile || profileLoading) return;
     setProfileLoading(true);
-    await window.loadProfile(profileId);
+    await loadProfile(profileId);
   }, [profile, profileLoading]);
 
   const ViewComponent = {
@@ -204,12 +219,3 @@ const App = () => {
     </>
   );
 };
-
-if (document.readyState === "loading") {
-  document.addEventListener("DOMContentLoaded", () => {
-    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
-  });
-} else {
-  const el = document.getElementById("root");
-  if (el) ReactDOM.createRoot(el).render(<App />);
-}

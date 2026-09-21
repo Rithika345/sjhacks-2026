@@ -1,32 +1,33 @@
 // Footprint — Live analysis from backend
+import { useState, useEffect } from "react";
+import { ViewHeader, PaperCard } from "./atoms.jsx";
+import { API_BASE_URL } from "../config.js";
+import { MAYA } from "../data.js";
 
-const { useState: fUseState, useEffect: fUseEffect } = React;
-const FP_API = window.API_BASE_URL;
-
-const fmt = (n) => {
+export const fmt = (n) => {
   if (n >= 1e6) return (n/1e6).toFixed(2) + "M";
   if (n >= 1e3) return (n/1e3).toFixed(1) + "K";
   return n.toLocaleString();
 };
 
-const FootprintView = () => {
-  const [data, setData] = fUseState(null);
-  const [loading, setLoading] = fUseState(true);
-  const [error, setError] = fUseState(null);
+export const FootprintView = () => {
+  const [data, setData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  fUseEffect(() => {
+  useEffect(() => {
     setLoading(true);
-    fetch(FP_API + "/api/footprint", { credentials: "include" })
+    fetch(API_BASE_URL + "/api/footprint", { credentials: "include" })
       .then(r => r.json())
       .then(d => { if (d.error) { setError(d.error); } else { setData(d); } setLoading(false); })
       .catch(e => { setError(e.message); setLoading(false); });
-  }, [window._currentProfile]);
+  }, []);
 
   if (loading) return (
     <div className="view-enter" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 56px 80px" }}>
       <ViewHeader eyebrow="FOOTPRINT · Your Wrapped" title="Reading your digital footprint…" sub="Running view-weighted topic analysis and category clustering." />
       <PaperCard style={{ padding: 48, textAlign: "center" }}>
-        <div className="serif" style={{ fontSize: 18, color: "var(--ink-mute)", fontStyle: "italic" }}>Analyzing content across {window.MAYA.name}'s channel…</div>
+        <div className="serif" style={{ fontSize: 18, color: "var(--ink-mute)", fontStyle: "italic" }}>Analyzing content across {MAYA.name}'s channel…</div>
       </PaperCard>
     </div>
   );
@@ -192,6 +193,3 @@ const FootprintView = () => {
     </div>
   );
 };
-
-window.FootprintView = FootprintView;
-window.fmt = fmt;

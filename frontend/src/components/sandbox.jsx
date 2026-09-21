@@ -1,9 +1,10 @@
 // Sandbox — Live stress test via backend API
+import { useState } from "react";
+import { ViewHeader, PaperCard } from "./atoms.jsx";
+import { IconRefresh, DecoTriangle } from "./icons.jsx";
+import { API_BASE_URL } from "../config.js";
 
-const { useState } = React;
-const SANDBOX_API = window.API_BASE_URL;
-
-const SandboxView = () => {
+export const SandboxView = () => {
   const [text, setText] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -17,7 +18,7 @@ const SandboxView = () => {
     setLoading(true);
     try {
       // Phase 1: Get structured risk report
-      const resp = await fetch(SANDBOX_API + "/api/sandbox", {
+      const resp = await fetch(API_BASE_URL + "/api/sandbox", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -28,7 +29,7 @@ const SandboxView = () => {
       setSubmitted(true);
 
       // Phase 2: Start the conversation
-      const chatResp = await fetch(SANDBOX_API + "/api/sandbox/chat", {
+      const chatResp = await fetch(API_BASE_URL + "/api/sandbox/chat", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -49,7 +50,7 @@ const SandboxView = () => {
     setChatHistory(prev => [...prev, { role: "user", content: msg }]);
     setChatLoading(true);
     try {
-      const resp = await fetch(SANDBOX_API + "/api/sandbox/chat", {
+      const resp = await fetch(API_BASE_URL + "/api/sandbox/chat", {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
@@ -186,7 +187,7 @@ const SandboxView = () => {
           ) : (
             <PaperCard style={{ padding: 28, flex: 1, display: "flex", flexDirection: "column", minHeight: 540 }}>
               <div className="eyebrow" style={{ color: "var(--red)", marginBottom: 16 }}>The provocateur</div>
-              
+
               {/* Chat messages */}
               <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: 14, marginBottom: 16 }}>
                 {chatHistory.map((msg, i) => (
@@ -251,5 +252,3 @@ const SandboxView = () => {
     </div>
   );
 };
-
-window.SandboxView = SandboxView;

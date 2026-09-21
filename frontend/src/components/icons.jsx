@@ -1,5 +1,5 @@
 // Minimal hand-drawn-feeling icons (SVG, currentColor, 1.5 stroke)
-const Icon = ({ children, size = 22, stroke = 1.5, ...rest }) => (
+export const Icon = ({ children, size = 22, stroke = 1.5, ...rest }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
        stroke="currentColor" strokeWidth={stroke}
        strokeLinecap="round" strokeLinejoin="round" {...rest}>
@@ -7,13 +7,13 @@ const Icon = ({ children, size = 22, stroke = 1.5, ...rest }) => (
   </svg>
 );
 
-const IconHome = (p) => (
+export const IconHome = (p) => (
   <Icon {...p}>
     <path d="M4 11 L 12 4 L 20 11 L 20 20 L 14 20 L 14 14 L 10 14 L 10 20 L 4 20 Z"/>
   </Icon>
 );
 
-const IconFootprint = (p) => (
+export const IconFootprint = (p) => (
   <Icon {...p}>
     {/* Footprint, top-down — solid silhouette so it reads at small size.
         Uses fill="currentColor" to override the parent SVG's fill="none". */}
@@ -30,7 +30,7 @@ const IconFootprint = (p) => (
   </Icon>
 );
 
-const IconMirror = (p) => (
+export const IconMirror = (p) => (
   <Icon {...p}>
     {/* Hand mirror */}
     <circle cx="11" cy="9" r="6" />
@@ -40,7 +40,7 @@ const IconMirror = (p) => (
   </Icon>
 );
 
-const IconSandbox = (p) => (
+export const IconSandbox = (p) => (
   <Icon {...p}>
     {/* Hourglass / question — a beaker with a swirl */}
     <path d="M7 3 L 17 3" />
@@ -49,7 +49,7 @@ const IconSandbox = (p) => (
   </Icon>
 );
 
-const IconVault = (p) => (
+export const IconVault = (p) => (
   <Icon {...p}>
     {/* Padlock — slightly sketched */}
     <rect x="5" y="10" width="14" height="11" rx="1.5" />
@@ -59,48 +59,48 @@ const IconVault = (p) => (
   </Icon>
 );
 
-const IconCadence = (p) => (
+export const IconCadence = (p) => (
   <Icon {...p}>
     {/* Pulse / metronome-ish wave */}
     <path d="M3 14 L 6 14 L 8 9 L 11 18 L 14 6 L 16 14 L 21 14" />
   </Icon>
 );
 
-const IconYouTube = (p) => (
+export const IconYouTube = (p) => (
   <Icon {...p} stroke={1.4}>
     <rect x="2.5" y="6" width="19" height="12" rx="3" />
     <path d="M10.5 9.5 L 15 12 L 10.5 14.5 Z" fill="currentColor" stroke="none" />
   </Icon>
 );
 
-const IconSearch = (p) => (
+export const IconSearch = (p) => (
   <Icon {...p}>
     <circle cx="11" cy="11" r="6" />
     <path d="M16 16 L 20 20" />
   </Icon>
 );
 
-const IconArrowUp = (p) => (
+export const IconArrowUp = (p) => (
   <Icon {...p} size={p.size || 14} stroke={2}>
     <path d="M12 19 L 12 5" />
     <path d="M6 11 L 12 5 L 18 11" />
   </Icon>
 );
 
-const IconArrowDown = (p) => (
+export const IconArrowDown = (p) => (
   <Icon {...p} size={p.size || 14} stroke={2}>
     <path d="M12 5 L 12 19" />
     <path d="M6 13 L 12 19 L 18 13" />
   </Icon>
 );
 
-const IconPlay = (p) => (
+export const IconPlay = (p) => (
   <Icon {...p}>
     <path d="M7 5 L 19 12 L 7 19 Z" fill="currentColor" stroke="none"/>
   </Icon>
 );
 
-const IconDownload = (p) => (
+export const IconDownload = (p) => (
   <Icon {...p}>
     <path d="M12 4 L 12 15" />
     <path d="M7 11 L 12 16 L 17 11" />
@@ -108,7 +108,7 @@ const IconDownload = (p) => (
   </Icon>
 );
 
-const IconRefresh = (p) => (
+export const IconRefresh = (p) => (
   <Icon {...p}>
     <path d="M4 12 a 8 8 0 0 1 14 -5" />
     <path d="M18 4 L 18 8 L 14 8" />
@@ -117,27 +117,27 @@ const IconRefresh = (p) => (
   </Icon>
 );
 
-const IconCheck = (p) => (
+export const IconCheck = (p) => (
   <Icon {...p}>
     <path d="M5 12.5 L 10 17.5 L 19 7" />
   </Icon>
 );
 
-const IconX = (p) => (
+export const IconX = (p) => (
   <Icon {...p}>
     <path d="M6 6 L 18 18" />
     <path d="M18 6 L 6 18" />
   </Icon>
 );
 
-const IconLockOpen = (p) => (
+export const IconLockOpen = (p) => (
   <Icon {...p}>
     <rect x="5" y="11" width="14" height="10" rx="1.5" />
     <path d="M8 11 L 8 7 Q 8 4, 12 4 Q 16 4, 16 7" />
   </Icon>
 );
 
-const IconCalendar = (p) => (
+export const IconCalendar = (p) => (
   <Icon {...p}>
     <rect x="4" y="5" width="16" height="16" rx="2" />
     <path d="M4 10 L 20 10" />
@@ -146,7 +146,7 @@ const IconCalendar = (p) => (
   </Icon>
 );
 
-const IconSun = (p) => (
+export const IconSun = (p) => (
   <Icon {...p}>
     <circle cx="12" cy="12" r="4" />
     <path d="M12 2 L 12 4" />
@@ -160,44 +160,37 @@ const IconSun = (p) => (
   </Icon>
 );
 
-const IconMoon = (p) => (
+export const IconMoon = (p) => (
   <Icon {...p}>
     <path d="M20 14.5 A 8 8 0 1 1 9.5 4 A 6.5 6.5 0 0 0 20 14.5 Z" />
   </Icon>
 );
 
 // Decorative geometric stamps for corners
-const DecoTriangle = ({ size = 36, color = "var(--red-pale)", style }) => (
+export const DecoTriangle = ({ size = 36, color = "var(--red-pale)", style }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" style={style}>
     <path d="M 20 4 L 36 34 L 4 34 Z" fill="none" stroke={color} strokeWidth="1.4" strokeLinejoin="round"/>
   </svg>
 );
-const DecoCircle = ({ size = 36, color = "var(--red-pale)", filled = false, style }) => (
+export const DecoCircle = ({ size = 36, color = "var(--red-pale)", filled = false, style }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" style={style}>
     <circle cx="20" cy="20" r="14" fill={filled ? color : "none"} stroke={color} strokeWidth="1.4" />
   </svg>
 );
-const DecoSquare = ({ size = 36, color = "var(--red-pale)", style }) => (
+export const DecoSquare = ({ size = 36, color = "var(--red-pale)", style }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" style={style}>
     <rect x="6" y="6" width="28" height="28" fill="none" stroke={color} strokeWidth="1.4" transform="rotate(8 20 20)" />
   </svg>
 );
-const DecoCross = ({ size = 24, color = "var(--red-pale)", style }) => (
+export const DecoCross = ({ size = 24, color = "var(--red-pale)", style }) => (
   <svg width={size} height={size} viewBox="0 0 24 24" style={style}>
     <path d="M12 3 L 12 21 M 3 12 L 21 12" stroke={color} strokeWidth="1.4" strokeLinecap="round"/>
   </svg>
 );
-const DecoDots = ({ size = 36, color = "var(--ink-faint)", style }) => (
+export const DecoDots = ({ size = 36, color = "var(--ink-faint)", style }) => (
   <svg width={size} height={size} viewBox="0 0 40 40" style={style}>
     {[...Array(9)].map((_, i) => (
       <circle key={i} cx={6 + (i % 3) * 14} cy={6 + Math.floor(i/3) * 14} r="1.3" fill={color} />
     ))}
   </svg>
 );
-
-Object.assign(window, {
-  Icon, IconHome, IconFootprint, IconMirror, IconSandbox, IconVault, IconCadence,
-  IconYouTube, IconSearch, IconArrowUp, IconArrowDown, IconPlay, IconDownload,
-  IconRefresh, IconCheck, IconX, IconLockOpen, IconCalendar, IconSun, IconMoon,
-  DecoTriangle, DecoCircle, DecoSquare, DecoCross, DecoDots,
-});

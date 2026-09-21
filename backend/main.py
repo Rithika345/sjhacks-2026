@@ -40,7 +40,22 @@ async def unhandled_exception_handler(request: Request, exc: Exception):
     # Log the real error server-side, return a clean JSON shape the frontend
     # already knows how to handle (it checks `data.error` everywhere).
     logger.exception("Unhandled error on %s %s", request.method, request.url.path)
-    return JSONResponse(status_code=500, content={"error": "something went wrong on our end"})
+    response = JSONResponse(status_code=500, content={"error": "something went wrong on our end"})
+
+    # CORSMiddleware never sees this response: Starlette's ServerErrorMiddleware
+    # (which routes to app.exception_handler(Exception)) sits OUTSIDE the
+    # user-added middleware stack, so a response built here bypasses
+    # CORSMiddleware entirely. Without the header below, a browser on a
+    # different origin (Netlify calling Cloud Run) can't read this response at
+    # all -- it sees an opaque "Failed to fetch" instead of the clean error
+    # message this handler exists to provide. Mirror CORSMiddleware's own
+    # allow-list check by hand for this one response.
+    origin = request.headers.get("origin")
+    if origin in config.ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        response.headers["Vary"] = "Origin"
+    return response
 
 PROFILES = {
     "maya": {

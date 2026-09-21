@@ -1,6 +1,7 @@
 // Reusable atoms: ViewHeader, Card, Eyebrow, Trend, Sparkline, etc.
+import { IconArrowUp, IconArrowDown } from "./icons.jsx";
 
-const ViewHeader = ({ eyebrow, title, sub, right }) => (
+export const ViewHeader = ({ eyebrow, title, sub, right }) => (
   <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 24, marginBottom: 28 }}>
     <div>
       {eyebrow && <div className="eyebrow" style={{ marginBottom: 10 }}>{eyebrow}</div>}
@@ -11,7 +12,7 @@ const ViewHeader = ({ eyebrow, title, sub, right }) => (
   </div>
 );
 
-const PaperCard = ({ children, style, padding = 24, accent = false, className = "" }) => (
+export const PaperCard = ({ children, style, padding = 24, accent = false, className = "" }) => (
   <div className={`card card-edge ${className}`} style={{
     background: accent ? "var(--cream-2)" : "var(--paper)",
     padding,
@@ -22,7 +23,7 @@ const PaperCard = ({ children, style, padding = 24, accent = false, className = 
 );
 
 // Trend arrow + percent
-const Trend = ({ value, suffix = "%" }) => {
+export const Trend = ({ value, suffix = "%" }) => {
   const positive = value >= 0;
   return (
     <span className="sans" style={{
@@ -36,7 +37,7 @@ const Trend = ({ value, suffix = "%" }) => {
   );
 };
 
-const Stat = ({ label, value, trend, suffix }) => (
+export const Stat = ({ label, value, trend, suffix }) => (
   <div>
     <div className="eyebrow" style={{ marginBottom: 8 }}>{label}</div>
     <div style={{ display: "flex", alignItems: "baseline", gap: 10 }}>
@@ -50,7 +51,7 @@ const Stat = ({ label, value, trend, suffix }) => (
 );
 
 // Hand-drawn sparkline using rough-ish path generation
-const Sparkline = ({ data, width = 300, height = 70, color = "var(--red)", fill = true }) => {
+export const Sparkline = ({ data, width = 300, height = 70, color = "var(--red)", fill = true }) => {
   const min = Math.min(...data);
   const max = Math.max(...data);
   const range = max - min || 1;
@@ -85,7 +86,7 @@ const Sparkline = ({ data, width = 300, height = 70, color = "var(--red)", fill 
 };
 
 // Hand-drawn line + bar combo chart
-const RoughChart = ({ weeks, width = 720, height = 240 }) => {
+export const RoughChart = ({ weeks, width = 720, height = 240 }) => {
   const padL = 36, padR = 36, padT = 14, padB = 28;
   const W = width - padL - padR;
   const H = height - padT - padB;
@@ -167,7 +168,7 @@ const RoughChart = ({ weeks, width = 720, height = 240 }) => {
 };
 
 // Donut chart, hand-drawn style
-const Donut = ({ data, size = 200, thickness = 28 }) => {
+export const Donut = ({ data, size = 200, thickness = 28 }) => {
   const r = size/2 - thickness/2 - 2;
   const cx = size/2, cy = size/2;
   let acc = 0;
@@ -197,7 +198,3 @@ const Donut = ({ data, size = 200, thickness = 28 }) => {
     </svg>
   );
 };
-
-Object.assign(window, {
-  ViewHeader, PaperCard, Trend, Stat, Sparkline, RoughChart, Donut,
-});
