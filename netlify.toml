@@ -6,3 +6,13 @@
 # VITE_API_BASE_URL is set in the Netlify dashboard (Site configuration ->
 # Environment variables), not here -- it points at the deployed Cloud Run
 # backend URL and shouldn't be hardcoded into version control.
+
+# The app uses React Router (client-side routing), so a direct hit or a
+# refresh on e.g. /cadence has no matching static file -- Netlify would
+# 404 without this. Falls back to index.html so the router can take over.
+# dist/print.html still gets served directly for that URL since Netlify
+# only applies a redirect when no real file matches first.
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

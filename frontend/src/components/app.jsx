@@ -1,5 +1,6 @@
 // App shell — sidebar, topbar, view router, profile switcher
 import { useState, useEffect, useCallback } from "react";
+import { Routes, Route, Navigate, Link, useLocation } from "react-router-dom";
 import {
   IconHome, IconFootprint, IconMirror, IconSandbox, IconVault, IconCadence,
   IconSun, IconMoon,
@@ -15,12 +16,12 @@ import { MAYA, liveState, loadProfile, setOnProfileChange, PROFILES } from "../d
 const THEME_STORAGE_KEY = "fifth-postulate-theme";
 
 const NAV = [
-  { id: "home",      label: "Home",      sub: "Parallel thoughts",  Icon: IconHome },
-  { id: "footprint", label: "Footprint", sub: "Your Wrapped",       Icon: IconFootprint },
-  { id: "mirror",    label: "Mirror",    sub: "Creative health",    Icon: IconMirror },
-  { id: "sandbox",   label: "Sandbox",   sub: "Test any move",      Icon: IconSandbox },
-  { id: "vault",     label: "Vault",     sub: "Protect your ideas", Icon: IconVault },
-  { id: "cadence",   label: "Cadence",   sub: "Your rhythm",        Icon: IconCadence },
+  { id: "home",      path: "/",           label: "Home",      sub: "Parallel thoughts",  Icon: IconHome },
+  { id: "footprint", path: "/footprint",  label: "Footprint", sub: "Your Wrapped",       Icon: IconFootprint },
+  { id: "mirror",    path: "/mirror",     label: "Mirror",    sub: "Creative health",    Icon: IconMirror },
+  { id: "sandbox",   path: "/sandbox",    label: "Sandbox",   sub: "Test any move",      Icon: IconSandbox },
+  { id: "vault",     path: "/vault",      label: "Vault",     sub: "Protect your ideas", Icon: IconVault },
+  { id: "cadence",   path: "/cadence",    label: "Cadence",   sub: "Your rhythm",        Icon: IconCadence },
 ];
 
 const PROFILE_COLORS = {
@@ -65,7 +66,7 @@ const ProfileSwitcher = ({ current, onSwitch, loading }) => (
   </div>
 );
 
-const Sidebar = ({ active, onChange, profile }) => (
+const Sidebar = ({ activeId, profile }) => (
   <aside className="sidebar paper-grain" style={{
     width: 240, flexShrink: 0,
     height: "100vh",
@@ -94,15 +95,14 @@ const Sidebar = ({ active, onChange, profile }) => (
       {NAV.map(n => {
         const Ic = n.Icon;
         return (
-          <div key={n.id}
-               className={`nav-item ${active === n.id ? "active" : ""}`}
-               onClick={() => onChange(n.id)}>
+          <Link key={n.id} to={n.path}
+               className={`nav-item ${activeId === n.id ? "active" : ""}`}>
             <span className="nav-icon"><Ic /></span>
             <div className="nav-label-row">
               <span>{n.label}</span>
               <span className="nav-sub">{n.sub}</span>
             </div>
-          </div>
+          </Link>
         );
       })}
     </nav>
@@ -177,7 +177,8 @@ const getInitialDarkMode = () => {
 };
 
 export const App = () => {
-  const [active, setActive] = useState("home");
+  const location = useLocation();
+  const activeId = NAV.find(n => n.path === location.pathname)?.id ?? "home";
   const [profile, setProfile] = useState("maya");
   const [profileLoading, setProfileLoading] = useState(false);
   const [dataVersion, setDataVersion] = useState(0); // forces re-render
@@ -210,30 +211,33 @@ export const App = () => {
     await loadProfile(profileId);
   }, [profile, profileLoading]);
 
-  const ViewComponent = {
-    home: HomeView,
-    footprint: FootprintView,
-    mirror: MirrorView,
-    sandbox: SandboxView,
-    vault: VaultView,
-    cadence: CadenceView,
-  }[active];
-
   return (
     <div className="paper-grain" style={{ display: "flex", minHeight: "100vh", background: "var(--cream-page)" }}>
-      <Sidebar active={active} onChange={setActive} profile={profile} />
-      <main style={{ flex: 1, minWidth: 0 }} data-screen-label={NAV.find(n => n.id === active)?.label}>
+      <Sidebar activeId={activeId} profile={profile} />
+      <main style={{ flex: 1, minWidth: 0 }} data-screen-label={NAV.find(n => n.id === activeId)?.label}>
         <TopBar
-          active={active}
+          active={activeId}
           profile={profile}
           onProfileSwitch={handleProfileSwitch}
           profileLoading={profileLoading}
           darkMode={darkMode}
           onToggleDarkMode={() => setDarkMode(d => !d)}
         />
-        <div key={`${active}-${dataVersion}`}>
-          <ViewComponent />
-        </div>
+        {/* key={dataVersion} forces a full remount of whichever view is
+            current when the demo profile changes, since the views read
+            data.js's plain mutable exports at mount time rather than
+            subscribing to them reactively. A path change already remounts
+            (different route = different element), this covers same-path
+            profile switches. */}
+        <Routes location={location} key={dataVersion}>
+          <Route path="/" element={<HomeView />} />
+          <Route path="/footprint" element={<FootprintView />} />
+          <Route path="/mirror" element={<MirrorView />} />
+          <Route path="/sandbox" element={<SandboxView />} />
+          <Route path="/vault" element={<VaultView />} />
+          <Route path="/cadence" element={<CadenceView />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
       </main>
     </div>
   );

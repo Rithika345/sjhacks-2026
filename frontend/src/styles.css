@@ -153,6 +153,7 @@ h3 { font-size: 20px; line-height: 1.2; }
   cursor: pointer;
   transition: background .12s, color .12s;
   position: relative;
+  text-decoration: none; /* .nav-item is now a react-router Link (<a>) */
 }
 .nav-item:hover { background: var(--cream-2); color: var(--ink); }
 .nav-item.active {
