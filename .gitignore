@@ -8,3 +8,7 @@ node_modules/
 .coverage
 dist/
 .env.local
+
+# GCP service account keys -- deploy credentials, never committed
+*-key.json
+gcp-key.json
