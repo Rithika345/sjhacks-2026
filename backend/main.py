@@ -13,6 +13,7 @@ from auth import create_session_token
 from db import Base, engine, get_db
 from deps import get_current_user
 from models import Analysis, SandboxSession, User, VaultEntry
+from ratelimit import rate_limit
 from routers.interpret import interpret_footprint, interpret_mirror, interpret_sandbox, sandbox_conversation
 from routers.processing import process_videos
 from routers.vault import build_proof, check_similarity, extract_concepts
@@ -232,6 +233,7 @@ def get_footprint(current_user: User = Depends(get_current_user), db: Session = 
         data["footprint"],
         data["channel_name"],
         data.get("consumption"),
+        cache_key=current_user.current_profile_key or "maya",
     )
     return {
         "metrics": data["footprint"],
@@ -250,7 +252,11 @@ def get_mirror(current_user: User = Depends(get_current_user), db: Session = Dep
     if "error" in data:
         return data
 
-    interpretation = interpret_mirror(data["mirror"], data["viral"])
+    interpretation = interpret_mirror(
+        data["mirror"],
+        data["viral"],
+        cache_key=current_user.current_profile_key or "maya",
+    )
     return {
         "metrics": data["mirror"],
         "viral": data["viral"],
@@ -260,7 +266,7 @@ def get_mirror(current_user: User = Depends(get_current_user), db: Session = Dep
 
 # ---- SANDBOX ----
 
-@app.post("/api/sandbox")
+@app.post("/api/sandbox", dependencies=[Depends(rate_limit(max_requests=8, window_seconds=300))])
 def run_sandbox(
     body: SandboxRequest,
     current_user: User = Depends(get_current_user),
@@ -282,7 +288,7 @@ def run_sandbox(
     return {"report": report}
 
 
-@app.post("/api/sandbox/chat")
+@app.post("/api/sandbox/chat", dependencies=[Depends(rate_limit(max_requests=15, window_seconds=300))])
 def sandbox_chat(
     body: SandboxChatRequest,
     current_user: User = Depends(get_current_user),
@@ -321,7 +327,7 @@ def sandbox_chat(
 
 # ---- VAULT ----
 
-@app.post("/api/vault")
+@app.post("/api/vault", dependencies=[Depends(rate_limit(max_requests=6, window_seconds=300))])
 def vault_protect(
     body: VaultRequest,
     current_user: User = Depends(get_current_user),
@@ -360,7 +366,7 @@ def vault_protect(
     }
 
 
-@app.post("/api/vault/seed")
+@app.post("/api/vault/seed", dependencies=[Depends(rate_limit(max_requests=2, window_seconds=3600))])
 def vault_seed(db: Session = Depends(get_db)):
     test_ideas = [
         "A cooking competition show where home cooks compete using only ingredients from a mystery box, judged by celebrity chefs, with weekly elimination rounds",

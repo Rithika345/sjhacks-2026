@@ -1,6 +1,6 @@
 // Footprint — Live analysis from backend
 import { useState, useEffect } from "react";
-import { ViewHeader, PaperCard } from "./atoms.jsx";
+import { ViewHeader, PaperCard, LoadingBar } from "./atoms.jsx";
 import { API_BASE_URL } from "../config.js";
 import { MAYA } from "../data.js";
 
@@ -24,17 +24,18 @@ export const FootprintView = () => {
   }, []);
 
   if (loading) return (
-    <div className="view-enter" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 56px 80px" }}>
+    <div className="view-enter view-shell">
       <ViewHeader eyebrow="FOOTPRINT · Your Wrapped" title="Reading your digital footprint…" sub="Running view-weighted topic analysis and category clustering." />
       <PaperCard style={{ padding: 48, textAlign: "center" }}>
-        <div className="serif" style={{ fontSize: 18, color: "var(--ink-mute)", fontStyle: "italic" }}>Analyzing content across {MAYA.name}'s channel…</div>
+        <div className="serif" style={{ fontSize: 18, color: "var(--ink-mute)", fontStyle: "italic", marginBottom: 22 }}>Analyzing content across {MAYA.name}'s channel…</div>
+        <LoadingBar style={{ maxWidth: 320, margin: "0 auto" }} />
       </PaperCard>
     </div>
   );
 
   if (error) return (
-    <div className="view-enter" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 56px 80px" }}>
-      <PaperCard style={{ padding: 28 }}><div className="serif" style={{ color: "var(--red)" }}>Error: {error}. Make sure you're logged in.</div></PaperCard>
+    <div className="view-enter view-shell">
+      <PaperCard style={{ padding: 28 }}><div className="serif" style={{ color: "var(--red)" }}>Error: {error}.</div></PaperCard>
     </div>
   );
 
@@ -45,7 +46,7 @@ export const FootprintView = () => {
   const catColors = { food_cooking: "#C7855B", lifestyle_personal: "#A98ABF", challenge_entertainment: "#B8543F", tech_review: "#8AA17A", other: "#8A7868" };
 
   return (
-    <div className="view-enter" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 56px 80px" }}>
+    <div className="view-enter view-shell">
       <ViewHeader
         eyebrow={`FOOTPRINT · ${data.channel_name}`}
         title="The shape you've left behind"
@@ -60,7 +61,7 @@ export const FootprintView = () => {
       />
 
       {/* Stats row */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
+      <div className="grid-3" style={{ marginBottom: 20 }}>
         <PaperCard style={{ padding: 28 }}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>Concentration Risk</div>
           <div className="num serif" style={{ fontSize: 48, color: metrics.concentration_risk > 70 ? "var(--red)" : metrics.concentration_risk > 40 ? "var(--amber)" : "var(--green)", lineHeight: 1 }}>
@@ -124,7 +125,7 @@ export const FootprintView = () => {
       </PaperCard>
 
       {/* Top and bottom performers */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+      <div className="grid-2" style={{ marginBottom: 20 }}>
         <PaperCard style={{ padding: 28 }}>
           <h3 className="serif" style={{ marginBottom: 14, color: "var(--green)" }}>Top performers</h3>
           {highlights.top_performers.map((v, i) => (
@@ -162,7 +163,7 @@ export const FootprintView = () => {
           <div className="serif" style={{ fontSize: 15, color: "var(--ink)", lineHeight: 1.5 }}>{interp.overton_window}</div>
         </div>
 
-        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14, marginBottom: 14 }}>
+        <div className="grid-2" style={{ marginBottom: 14 }}>
           <div style={{ padding: 16, background: "var(--paper)", border: "1px solid var(--rule-soft)", borderRadius: 4 }}>
             <div className="eyebrow" style={{ marginBottom: 8 }}>Audience expects</div>
             {interp.audience_expects.map((e, i) => (

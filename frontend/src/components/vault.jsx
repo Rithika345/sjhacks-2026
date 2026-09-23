@@ -1,6 +1,6 @@
 // Vault — Live idea protection + similarity detection via backend
 import { useState } from "react";
-import { ViewHeader, PaperCard } from "./atoms.jsx";
+import { ViewHeader, PaperCard, LoadingBar } from "./atoms.jsx";
 import { API_BASE_URL } from "../config.js";
 import { VAULTED } from "../data.js";
 
@@ -54,14 +54,14 @@ export const VaultView = () => {
   const stateColor = { fresh: "var(--green)", aging: "var(--amber)", expiring: "var(--red)" };
 
   return (
-    <div className="view-enter" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 56px 80px" }}>
+    <div className="view-enter view-shell">
       <ViewHeader
         eyebrow="VAULT · Protect your ideas"
         title="Lock it before someone else ships it"
         sub="Cryptographic timestamp + semantic similarity detection. Your idea text never leaves your browser."
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 18 }}>
+      <div className="split-2-even">
         {/* Left: new idea input */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <PaperCard style={{ padding: 28 }}>
@@ -88,6 +88,7 @@ export const VaultView = () => {
                 lineHeight: 1.6, color: "var(--ink)", resize: "vertical", outline: "none",
               }}
             />
+            {loading && <LoadingBar label="Extracting concepts and checking similarity…" style={{ marginTop: 16 }} />}
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: 16 }}>
               {!seeded && (
                 <button className="btn btn-ghost" onClick={onSeed}>Seed demo vault</button>
@@ -104,7 +105,7 @@ export const VaultView = () => {
             <div style={{ animation: "scaleIn .45s ease-out" }}>
               <PaperCard style={{ padding: 28 }}>
                 <div className="eyebrow" style={{ color: "var(--red)", marginBottom: 14 }}>Similarity Scan</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 16 }}>
+                <div className="grid-2" style={{ marginBottom: 16 }}>
                   <div style={{ padding: 18, background: "var(--cream-2)", border: "1px solid var(--rule-soft)", borderRadius: 4 }}>
                     <div className="eyebrow" style={{ marginBottom: 6 }}>Overlap Score</div>
                     <div className="num serif" style={{ fontSize: 42, color: simColor(result.similarity.highest_similarity_percent), lineHeight: 1 }}>
@@ -147,7 +148,7 @@ export const VaultView = () => {
                 <div style={{ fontFamily: "var(--mono)", fontSize: 11, color: "var(--ink-mute)", wordBreak: "break-all", padding: 14, background: "var(--cream-2)", borderRadius: 4, border: "1px solid var(--rule-soft)", marginBottom: 12 }}>
                   {result.proof.hash}
                 </div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 12 }}>
+                <div className="grid-2">
                   <div>
                     <div className="eyebrow" style={{ marginBottom: 4 }}>Timestamp</div>
                     <div className="serif" style={{ fontSize: 14, color: "var(--ink-soft)" }}>{new Date(result.proof.timestamp).toLocaleString()}</div>

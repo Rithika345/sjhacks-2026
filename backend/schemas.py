@@ -7,13 +7,17 @@ class ProfileSwitchRequest(BaseModel):
 
 
 class VaultRequest(BaseModel):
-    idea: str = Field(..., min_length=1)
+    # max_length matters even with rate limiting on this route: without it,
+    # a single request within the allowed rate could still be a huge wall
+    # of text, which costs just as much in Anthropic tokens as many small
+    # ones would.
+    idea: str = Field(..., min_length=1, max_length=2000)
 
 
 class SandboxRequest(BaseModel):
-    move: str = Field(..., min_length=1)
+    move: str = Field(..., min_length=1, max_length=2000)
 
 
 class SandboxChatRequest(BaseModel):
-    message: str = Field(..., min_length=1)
-    move: Optional[str] = None
+    message: str = Field(..., min_length=1, max_length=2000)
+    move: Optional[str] = Field(None, max_length=2000)

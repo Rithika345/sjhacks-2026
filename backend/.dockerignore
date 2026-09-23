@@ -9,3 +9,10 @@ tests/
 requirements-dev.txt
 Dockerfile
 .dockerignore
+
+# GCP service account key -- used only to authenticate the local `gcloud`
+# CLI for deploys, never read by the running app (nothing in the codebase
+# references it or GOOGLE_APPLICATION_CREDENTIALS). Without this, it was
+# being copied straight into the built container image on every deploy.
+*-key.json
+gcp-key.json

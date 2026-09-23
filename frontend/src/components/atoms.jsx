@@ -12,6 +12,21 @@ export const ViewHeader = ({ eyebrow, title, sub, right }) => (
   </div>
 );
 
+// Indeterminate loading bar — used anywhere a fetch/API call is in flight
+// so the page never looks frozen while waiting on a real network request.
+// `label` is optional caption text shown above the bar.
+export const LoadingBar = ({ label, style }) => (
+  <div style={{ width: "100%", ...style }}>
+    {label && (
+      <div className="serif" style={{ fontSize: 13, color: "var(--ink-mute)", fontStyle: "italic", marginBottom: 10, display: "flex", alignItems: "center", gap: 6 }}>
+        <span className="loading-dot" />
+        {label}
+      </div>
+    )}
+    <div className="loading-bar" />
+  </div>
+);
+
 export const PaperCard = ({ children, style, padding = 24, accent = false, className = "" }) => (
   <div className={`card card-edge ${className}`} style={{
     background: accent ? "var(--cream-2)" : "var(--paper)",

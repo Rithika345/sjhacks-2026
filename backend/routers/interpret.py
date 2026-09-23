@@ -2,9 +2,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 import os
+import threading
 from anthropic import Anthropic
 
 client = Anthropic(api_key=os.getenv("ANTHROPIC_API_KEY"))
+
+# footprint/mirror interpretations are pure functions of a fixed demo
+# profile's data -- there are only ever 3 profiles (maya/gamerz/techtara)
+# and their mock data never changes, so the LLM output for a given profile
+# is the same every time. Caching by profile_key means the API gets called
+# at most once per profile per running container, no matter how many
+# visitors (or bots) hit /api/footprint or /api/mirror.
+_cache_lock = threading.Lock()
+_footprint_cache: dict[str, str] = {}
+_mirror_cache: dict[str, str] = {}
 
 def clean_json(text):
     text = text.strip()
@@ -16,9 +27,14 @@ def clean_json(text):
         text = text[:-3]
     return text.strip()
 
-def interpret_footprint(footprint_data, channel_name, consumption=None):
+def interpret_footprint(footprint_data, channel_name, consumption=None, cache_key=None):
     """Claude reads YOUR computed metrics and writes the identity summary"""
-    
+    if cache_key is not None:
+        with _cache_lock:
+            cached = _footprint_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
     consumption_block = ""
     if consumption:
         consumption_block = f"""
@@ -57,11 +73,21 @@ Return JSON:
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}]
     )
-    return clean_json(response.content[0].text)
+    result = clean_json(response.content[0].text)
+    if cache_key is not None:
+        with _cache_lock:
+            _footprint_cache[cache_key] = result
+    return result
 
 
-def interpret_mirror(mirror_data, viral_data):
+def interpret_mirror(mirror_data, viral_data, cache_key=None):
     """Claude reads YOUR computed burnout score and explains it"""
+    if cache_key is not None:
+        with _cache_lock:
+            cached = _mirror_cache.get(cache_key)
+        if cached is not None:
+            return cached
+
     prompt = f"""You are interpreting a content creator's health metrics. These numbers were computed by our analysis pipeline using linear regression, not estimated. Return ONLY valid JSON.
 
 Weekly Data (recent 10 weeks): {mirror_data['weekly_data'][-10:]}
@@ -86,7 +112,11 @@ Return JSON:
         max_tokens=1000,
         messages=[{"role": "user", "content": prompt}]
     )
-    return clean_json(response.content[0].text)
+    result = clean_json(response.content[0].text)
+    if cache_key is not None:
+        with _cache_lock:
+            _mirror_cache[cache_key] = result
+    return result
 
 
 def interpret_sandbox(footprint_data, mirror_data, proposed_move):

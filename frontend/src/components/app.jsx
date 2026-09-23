@@ -42,7 +42,7 @@ const ProfileSwitcher = ({ current, onSwitch, loading }) => (
     background: "var(--cream-2)", border: "1px solid var(--rule-soft)",
     borderRadius: 8,
   }}>
-    <span className="eyebrow" style={{ alignSelf: "center", marginRight: 8 }}>Demo Profile</span>
+    <span className="eyebrow profile-switcher-label" style={{ alignSelf: "center", marginRight: 8 }}>Demo Profile</span>
     {Object.entries(PROFILES).map(([id, name]) => (
       <button
         key={id}
@@ -67,7 +67,7 @@ const ProfileSwitcher = ({ current, onSwitch, loading }) => (
 );
 
 const Sidebar = ({ activeId, profile }) => (
-  <aside className="sidebar paper-grain" style={{
+  <aside className="sidebar paper-grain app-sidebar" style={{
     width: 240, flexShrink: 0,
     height: "100vh",
     position: "sticky", top: 0,
@@ -83,7 +83,7 @@ const Sidebar = ({ activeId, profile }) => (
           fontFamily: "var(--serif)", fontSize: 18, fontWeight: 600,
           boxShadow: "0 2px 6px -2px rgba(184,84,63,.5)",
         }}>5</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="sidebar-brand-text" style={{ flex: 1, minWidth: 0 }}>
           <div className="serif" style={{ fontSize: 15, lineHeight: 1.1, color: "var(--ink)", whiteSpace: "nowrap" }}>The Fifth</div>
           <div className="serif" style={{ fontSize: 15, lineHeight: 1.1, color: "var(--ink)", fontStyle: "italic", whiteSpace: "nowrap" }}>Postulate</div>
         </div>
@@ -115,7 +115,7 @@ const Sidebar = ({ activeId, profile }) => (
           color: "#FBF6E8", display: "flex", alignItems: "center", justifyContent: "center",
           fontFamily: "var(--serif)", fontSize: 16, fontWeight: 600,
         }}>{PROFILE_INITIALS[profile]}</div>
-        <div style={{ flex: 1, minWidth: 0 }}>
+        <div className="sidebar-profile-text" style={{ flex: 1, minWidth: 0 }}>
           <div className="serif" style={{ fontSize: 14, color: "var(--ink)", lineHeight: 1.1 }}>{MAYA.name}</div>
           <div className="sans" style={{ fontSize: 11, color: "var(--ink-mute) " }}>
             {liveState.burnoutScore != null ? `Burnout: ${liveState.burnoutScore}/100` : "Loading..."}
@@ -146,17 +146,18 @@ const ThemeToggle = ({ dark, onToggle }) => (
 const TopBar = ({ active, profile, onProfileSwitch, profileLoading, darkMode, onToggleDarkMode }) => {
   const view = NAV.find(n => n.id === active);
   return (
-    <div className="topbar" style={{
-      height: 64, display: "flex", alignItems: "center", justifyContent: "space-between",
-      padding: "0 56px",
+    <div className="topbar topbar-inner" style={{
+      minHeight: 64, display: "flex", alignItems: "center", justifyContent: "space-between",
+      flexWrap: "wrap", rowGap: 10,
+      padding: "12px 56px",
       position: "sticky", top: 0, zIndex: 10,
       backdropFilter: "blur(6px)",
       background: "color-mix(in oklab, var(--cream-page) 88%, transparent)",
     }}>
-      <div style={{ display: "flex", alignItems: "center", gap: 16 }}>
-        <h2 className="serif" style={{ fontSize: 22 }}>The Fifth Postulate</h2>
-        <span className="serif" style={{ color: "var(--ink-faint)" }}>·</span>
-        <span className="serif" style={{ fontStyle: "italic", color: "var(--ink-mute)", fontSize: 16 }}>{view?.sub}</span>
+      <div style={{ display: "flex", alignItems: "center", gap: 16, minWidth: 0 }}>
+        <h2 className="serif" style={{ fontSize: 22, whiteSpace: "nowrap" }}>The Fifth Postulate</h2>
+        <span className="serif topbar-title-sub" style={{ color: "var(--ink-faint)" }}>·</span>
+        <span className="serif topbar-title-sub" style={{ fontStyle: "italic", color: "var(--ink-mute)", fontSize: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{view?.sub}</span>
       </div>
       <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
         <ThemeToggle dark={darkMode} onToggle={onToggleDarkMode} />

@@ -29,3 +29,19 @@ def _clean_database():
     Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
     yield
+
+
+@pytest.fixture(autouse=True)
+def _clean_interpretation_cache():
+    """routers.interpret caches footprint/mirror interpretations in
+    module-level dicts, keyed by profile, so the real Anthropic API only
+    ever gets called once per profile in production. That cache would
+    otherwise leak between tests in this same process -- e.g. a mocked
+    footprint call in one test silently serving its cached result to a
+    later test that expects a real (failing) API call. Reset it every test
+    so each test's mocks/expectations are the only thing in play."""
+    from routers import interpret
+
+    interpret._footprint_cache.clear()
+    interpret._mirror_cache.clear()
+    yield

@@ -1,0 +1,22 @@
+# Without this file, `gcloud run deploy --source .` has nothing telling it
+# what to leave out of the upload to Cloud Build -- it only auto-ignores
+# .git, and it does NOT fall back to the repo's top-level .gitignore
+# (gcloud only picks that up automatically if a .gitignore sits in this
+# same directory, and this one lives at the repo root instead). Without
+# this file, every deploy was uploading venv/ (100+ MB of installed
+# packages), tests/, and -- more importantly -- .env and gcp-key.json,
+# containing real secrets in plaintext, to a Cloud Build staging bucket.
+.git
+.gitignore
+venv/
+__pycache__/
+*.pyc
+tests/
+.pytest_cache/
+.coverage
+*.db
+.env
+.env.local
+*-key.json
+gcp-key.json
+deploy.sh

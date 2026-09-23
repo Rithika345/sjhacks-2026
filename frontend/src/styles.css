@@ -271,3 +271,78 @@ h3 { font-size: 20px; line-height: 1.2; }
 
 /* selection */
 ::selection { background: var(--red-pale); color: var(--ink); }
+
+/* ===== Loading bar (indeterminate) ===== */
+@keyframes loadingBarSlide {
+  0%   { left: -35%; width: 35%; }
+  50%  { left: 30%;  width: 45%; }
+  100% { left: 100%; width: 35%; }
+}
+.loading-bar {
+  position: relative;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--cream-3);
+  overflow: hidden;
+}
+.loading-bar::after {
+  content: "";
+  position: absolute;
+  top: 0; height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--red), transparent);
+  animation: loadingBarSlide 1.3s ease-in-out infinite;
+}
+.loading-dot {
+  display: inline-block;
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  animation: loadingDotPulse 1s ease-in-out infinite;
+}
+@keyframes loadingDotPulse {
+  0%, 100% { opacity: .25; transform: scale(.85); }
+  50% { opacity: 1; transform: scale(1); }
+}
+
+/* ===== Responsive layout ===== */
+.view-shell {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 32px 56px 80px;
+}
+
+.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+.grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; }
+.grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 16px; }
+
+/* Major two-panel layouts (Sandbox input/chat, Vault form/list) — each side
+   needs real width to stay usable, so this collapses sooner than the
+   smaller stat-card grids above. */
+.split-2 { display: grid; grid-template-columns: 1fr 1.1fr; gap: 18px; }
+.split-2-even { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+
+@media (max-width: 1000px) {
+  .view-shell { padding: 28px 32px 64px; }
+  .grid-3, .grid-4 { grid-template-columns: 1fr 1fr; }
+  .split-2, .split-2-even { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 640px) {
+  .view-shell { padding: 18px 16px 48px; }
+  .grid-2, .grid-3, .grid-4 { grid-template-columns: 1fr; }
+}
+
+/* App shell chrome */
+@media (max-width: 900px) {
+  .topbar-inner { padding: 0 24px !important; }
+  .profile-switcher-label { display: none; }
+}
+@media (max-width: 720px) {
+  .app-sidebar { width: 76px !important; }
+  .app-sidebar .nav-label-row, .app-sidebar .sidebar-brand-text, .app-sidebar .sidebar-profile-text {
+    display: none !important;
+  }
+  .app-sidebar .nav-item { justify-content: center; }
+  .topbar-title-sub { display: none; }
+}

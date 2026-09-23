@@ -1,6 +1,6 @@
 // Sandbox — Live stress test via backend API
 import { useState } from "react";
-import { ViewHeader, PaperCard } from "./atoms.jsx";
+import { ViewHeader, PaperCard, LoadingBar } from "./atoms.jsx";
 import { IconRefresh, DecoTriangle } from "./icons.jsx";
 import { API_BASE_URL } from "../config.js";
 
@@ -74,14 +74,14 @@ export const SandboxView = () => {
   const riskColor = (score) => score > 60 ? "var(--red)" : score > 30 ? "var(--amber)" : "var(--green)";
 
   return (
-    <div className="view-enter" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 56px 80px", position: "relative" }}>
+    <div className="view-enter view-shell" style={{ position: "relative" }}>
       <ViewHeader
         eyebrow="SANDBOX · Test any move"
         title="Try it on paper first"
         sub="Type a move. The provocateur won't tell you what to do — only what to think about."
       />
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.1fr", gap: 18 }}>
+      <div className="split-2">
         {/* Left: input + report */}
         <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
           <PaperCard style={{ padding: 32, display: "flex", flexDirection: "column" }}>
@@ -104,6 +104,7 @@ export const SandboxView = () => {
                 opacity: submitted ? 0.6 : 1,
               }}
             />
+            {loading && <LoadingBar label="Running the stress test against your actual metrics…" style={{ marginTop: 18 }} />}
             <div style={{ display: "flex", justifyContent: "flex-end", alignItems: "center", marginTop: 18, gap: 10 }}>
               {submitted && (
                 <button className="btn btn-ghost" onClick={reset}>
@@ -121,7 +122,7 @@ export const SandboxView = () => {
             <div style={{ animation: "scaleIn .45s ease-out" }}>
               <PaperCard style={{ padding: 28 }}>
                 <div className="eyebrow" style={{ color: "var(--red)", marginBottom: 16 }}>Risk Assessment</div>
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, marginBottom: 20 }}>
+                <div className="grid-2" style={{ marginBottom: 20 }}>
                   <div style={{ padding: 18, background: "var(--cream-2)", border: "1px solid var(--rule-soft)", borderRadius: 4 }}>
                     <div className="eyebrow" style={{ marginBottom: 6 }}>Cancel Risk</div>
                     <div className="num serif" style={{ fontSize: 42, color: riskColor(report.cancel_risk_score), lineHeight: 1 }}>
@@ -136,7 +137,7 @@ export const SandboxView = () => {
                   </div>
                 </div>
 
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
+                <div className="grid-2">
                   <div style={{ padding: 16, background: "color-mix(in oklab, var(--red) 8%, var(--paper))", border: "1px solid color-mix(in oklab, var(--red) 20%, var(--rule))", borderRadius: 4 }}>
                     <div className="eyebrow" style={{ color: "var(--red)", marginBottom: 10 }}>Worst Case</div>
                     {report.worst_case.map((w, i) => (

@@ -1,6 +1,6 @@
 // Mirror — Live creative health from backend
 import { useState, useEffect } from "react";
-import { ViewHeader, PaperCard } from "./atoms.jsx";
+import { ViewHeader, PaperCard, LoadingBar } from "./atoms.jsx";
 import { API_BASE_URL } from "../config.js";
 
 export const MirrorView = () => {
@@ -17,17 +17,18 @@ export const MirrorView = () => {
   }, []);
 
   if (loading) return (
-    <div className="view-enter" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 56px 80px" }}>
+    <div className="view-enter view-shell">
       <ViewHeader eyebrow="MIRROR · Creative health" title="Reading your vitals…" sub="Crunching your data through the analysis pipeline." />
       <PaperCard style={{ padding: 48, textAlign: "center" }}>
-        <div className="serif" style={{ fontSize: 18, color: "var(--ink-mute)", fontStyle: "italic" }}>Running linear regression on engagement trends…</div>
+        <div className="serif" style={{ fontSize: 18, color: "var(--ink-mute)", fontStyle: "italic", marginBottom: 22 }}>Running linear regression on engagement trends…</div>
+        <LoadingBar style={{ maxWidth: 320, margin: "0 auto" }} />
       </PaperCard>
     </div>
   );
 
   if (error) return (
-    <div className="view-enter" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 56px 80px" }}>
-      <PaperCard style={{ padding: 28 }}><div className="serif" style={{ color: "var(--red)" }}>Error: {error}. Make sure you're logged in.</div></PaperCard>
+    <div className="view-enter view-shell">
+      <PaperCard style={{ padding: 28 }}><div className="serif" style={{ color: "var(--red)" }}>Error: {error}.</div></PaperCard>
     </div>
   );
 
@@ -44,7 +45,7 @@ export const MirrorView = () => {
   const maxEng = Math.max(...weekly.map(w => w.avg_engagement));
 
   return (
-    <div className="view-enter" style={{ maxWidth: 1180, margin: "0 auto", padding: "32px 56px 80px" }}>
+    <div className="view-enter view-shell">
       <ViewHeader
         eyebrow="MIRROR · Creative health"
         title="The curve you can't see from inside it"
@@ -52,7 +53,7 @@ export const MirrorView = () => {
       />
 
       {/* Health score + stats */}
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr 1fr", gap: 16, marginBottom: 20 }}>
+      <div className="grid-4" style={{ marginBottom: 20 }}>
         <PaperCard style={{ padding: 28, textAlign: "center" }}>
           <div className="eyebrow" style={{ marginBottom: 8 }}>Health Status</div>
           <div className="num serif" style={{ fontSize: 48, color: healthColor, lineHeight: 1 }}>{interp.health_label}</div>
